@@ -13,7 +13,7 @@ namespace Nekres.Music_Mixer.Core.Player.API
 {
     internal class youtube_dl
     {
-        private const string TITLE = "yt-dlp";
+        public const string TITLE = "yt-dlp";
         private static string ExecutablePath => Path.Combine(MusicMixer.Instance.ModuleDirectory, $"bin/{TITLE}.exe");
         private static AudioBitrate AverageBitrate => MusicMixer.Instance.AverageBitrateSetting.Value;
 

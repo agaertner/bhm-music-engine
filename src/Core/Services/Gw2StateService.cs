@@ -4,6 +4,7 @@ using Gw2Sharp.Models;
 using Nekres.Music_Mixer.Core.Player;
 using Stateless;
 using System;
+using Blish_HUD.Extended;
 using static Blish_HUD.GameService;
 namespace Nekres.Music_Mixer.Core.Services
 {

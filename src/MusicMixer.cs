@@ -56,9 +56,6 @@ namespace Nekres.Music_Mixer
 
         public string ModuleDirectory { get; private set; }
 
-        private const string _FFmpegPath = "bin/ffmpeg.exe";
-        private const string _youtubeDLPath = "bin/youtube-dl.exe";
-
         private DataPanel _debugPanel;
 
         internal AudioEngine AudioEngine;
@@ -150,7 +147,7 @@ namespace Nekres.Music_Mixer
             this.MapService.DownloadRegions();
             await Task.Run(() => {
                 //ExtractFile(_FFmpegPath);
-                ExtractFile(_youtubeDLPath);
+                ExtractFile($"bin/{youtube_dl.TITLE}.exe");
             }).ContinueWith(_ => youtube_dl.Load());
         }
 

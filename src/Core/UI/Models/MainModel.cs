@@ -1,5 +1,6 @@
 ﻿using Nekres.Music_Mixer.Core.Services;
 using System;
+using Blish_HUD.Extended;
 using Gw2Sharp.Models;
 
 namespace Nekres.Music_Mixer.Core.UI.Models

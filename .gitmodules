@@ -1,3 +1,6 @@
 [submodule "submodules/bhud-extended"]
 	path = submodules/bhud-extended
 	url = https://github.com/agaertner/Blish-HUD-Extended.git
+[submodule "submodules/litedb"]
+	path = submodules/litedb
+	url = https://github.com/mbdavid/LiteDB.git
