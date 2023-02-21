@@ -13,12 +13,13 @@ namespace Nekres.Music_Mixer.Core.Player.API
 {
     internal class youtube_dl
     {
-        private static string ExecutablePath => Path.Combine(MusicMixer.Instance.ModuleDirectory, "bin/youtube-dl.exe");
+        private const string TITLE = "yt-dlp";
+        private static string ExecutablePath => Path.Combine(MusicMixer.Instance.ModuleDirectory, $"bin/{TITLE}.exe");
         private static AudioBitrate AverageBitrate => MusicMixer.Instance.AverageBitrateSetting.Value;
 
         private static readonly Regex _youtubeVideoId = new (@"youtu(?:\.be|be\.com)/(?:.*v(?:/|=)|(?:.*/)?)(?<id>[a-zA-Z0-9-_]+)", RegexOptions.Compiled);
         private static readonly Regex _progressReport = new (@"^\[download\].*?(?<percentage>(.*?))% of (?<size>(.*?))MiB at (?<speed>(.*?)) ETA (?<eta>(.*?))$", RegexOptions.Compiled); //[download]   2.7% of 4.62MiB at 200.00KiB/s ETA 00:23
-        private static readonly Regex _version = new (@"^Updating to version (?<toVersion>(.*?)) \.\.\.$|^youtube-dl is up-to-date \((?<isVersion>(.*?))\)$", RegexOptions.Compiled); //Updating to version 2015.01.16 ... | youtube-dl is up-to-date (2021.12.17)
+        private static readonly Regex _version = new ($@"^Updating to version (?<toVersion>(.*?)) \.\.\.$|^${TITLE} is up-to-date \((?<isVersion>(.*?))\)$", RegexOptions.Compiled); //Updating to version 2015.01.16 ... | youtube-dl is up-to-date (2021.12.17)
 
         public static void Load()
         {
@@ -43,12 +44,12 @@ namespace Nekres.Music_Mixer.Core.Player.API
                 var toVersion = match.Groups["toVersion"].Value;
                 var isVersion = match.Groups["isVersion"].Value;
                 var version = string.IsNullOrEmpty(isVersion) ? toVersion : isVersion;
-                MusicMixer.Logger.Info($"Using youtube-dl version {version}");
+                MusicMixer.Logger.Info($"Using {TITLE} version {version}");
             };
             p.ErrorDataReceived += (_, e) =>
             {
                 if (string.IsNullOrEmpty(e.Data)) return;
-                MusicMixer.Logger.Error($"Failed to load or update youtube-dl: \"{e.Data}\"");
+                MusicMixer.Logger.Error($"Failed to load or update {TITLE}: \"{e.Data}\"");
             };
             p.Start();
             p.BeginOutputReadLine();
@@ -125,7 +126,7 @@ namespace Nekres.Music_Mixer.Core.Player.API
                     Arguments = $"--dump-json {link}"
                 }
             };
-            p.OutputDataReceived += async (_, e) =>
+            p.OutputDataReceived += (_, e) =>
             {
                 if (string.IsNullOrEmpty(e.Data)) return;
                 callback.Invoke(JsonConvert.DeserializeObject<MetaData>(e.Data));
