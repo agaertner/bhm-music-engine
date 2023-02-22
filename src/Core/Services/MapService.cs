@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Gw2Sharp.WebApi.V2;
 using Gw2Sharp.WebApi.V2.Models;
 
 namespace Nekres.Music_Mixer.Core.Services
@@ -94,92 +95,113 @@ namespace Nekres.Music_Mixer.Core.Services
         private async Task RequestRegions()
         {
             var mapsLookUp = await LoadMapLookUp();
-            try
-            {
-
 #if DEBUG
-                var notFound = new List<(int, ContinentFloorRegionMap)>();
+            var notFound = new List<(int, ContinentFloorRegionMap)>();
 #endif
+            IApiV2ObjectList<int> continentIds;
 
-                var continentIds = await GameService.Gw2WebApi.AnonymousConnection.Client.V2.Continents.IdsAsync();
-                var allRegionNames = new Dictionary<int, string>();
-                var allRegionMaps = new Dictionary<int, IEnumerable<int>>();
-                var allMapNames = new Dictionary<int, string>();
-                foreach (var continentId in continentIds)
+            try {
+                continentIds = await GameService.Gw2WebApi.AnonymousConnection.Client.V2.Continents.IdsAsync();
+            } catch (RequestException e) {
+                MusicMixer.Logger.Error(e, e.Message);
+                return;
+            }
+
+            if (!continentIds.Any()) {
+                return;
+            }
+
+            var allRegionNames = new Dictionary<int, string>();
+            var allRegionMaps = new Dictionary<int, IEnumerable<int>>();
+            var allMapNames = new Dictionary<int, string>();
+            foreach (var continentId in continentIds) {
+
+                IApiV2ObjectList<int> floorIds;
+
+                try {
+                    floorIds = await GameService.Gw2WebApi.AnonymousConnection.Client.V2.Continents[continentId].Floors.IdsAsync();
+                } catch (RequestException e) {
+                    MusicMixer.Logger.Error(e, e.Message);
+                    break;
+                }
+
+                if (!floorIds.Any()) {
+                    continue;
+                }
+
+                // Crawl each floor to get all maps...
+                var   regions = new List<int>();
+                float i = 0;
+                foreach (var floorId in floorIds)
                 {
-                    var floorIds = await GameService.Gw2WebApi.AnonymousConnection.Client.V2.Continents[continentId].Floors.IdsAsync();
-                    var regions = new List<int>();
-                    // Crawl each floor to get all maps...
-                    foreach (var floorId in floorIds)
-                    {
-                        try
-                        {
-                            var floorRegions = await GameService.Gw2WebApi.AnonymousConnection.Client.V2
-                                .Continents[continentId].Floors[floorId].Regions.AllAsync();
+                    _loadingIndicator.Report($"Loading.. {Math.Round(i++ / floorIds.Count * 100)}%");
 
-                            var mapsByRegion = floorRegions.ToDictionary(x => x.Id, x => x.Maps.Select(y => y.Value));
+                    IApiV2ObjectList<ContinentFloorRegion> floorRegions;
 
-                            foreach (var region in mapsByRegion)
-                            {
-                                if (regions.All(x => x != region.Key))
-                                {
-                                    regions.Add(region.Key);
-                                }
+                    try {
+                        floorRegions = await GameService.Gw2WebApi.AnonymousConnection.Client.V2
+                                                        .Continents[continentId]
+                                                        .Floors[floorId]
+                                                        .Regions.AllAsync();
+                    } catch (NotFoundException) {
+                        continue; // Ignore. Floor id does not exist somehow...
+                    } catch (RequestException e) {
+                        MusicMixer.Logger.Error(e, e.Message);
+                        break;
+                    }
 
-                                var regionName = floorRegions.First(x => x.Id == region.Key).Name;
-                                _loadingIndicator.Report($"Searching floor {floorId} of {regionName}..");
+                    if (!floorRegions.Any()) {
+                        continue;
+                    }
 
-                                foreach (var map in region.Value.Where(x => mapsLookUp.Values.Any(id => x.Id == id)))
-                                {
-                                    if (allMapNames.ContainsKey(map.Id)) continue;
-                                    allMapNames.Add(map.Id, map.Name);
-                                    _loadingIndicator.Report($"Adding {map.Name}..");
-                                }
+                    var mapsByRegion = floorRegions.ToDictionary(x => x.Id, x => x.Maps.Select(y => y.Value));
 
-#if DEBUG
-                                // Helping out Discord RPC (https://github.com/OpNop/GW2-RPC-Resources) to gather unresolved maps..
-                                notFound.AddRange(region.Value
-                                                    .Where(x => !mapsLookUp.ContainsKey(MapUtil.GetSHA1(continentId, x.ContinentRect)))
-                                                    .Select(x => (continentId, x)));
-#endif
-
-                                var publicMapIds = region.Value.Select(x => MapUtil.GetSHA1(continentId, x.ContinentRect)).Where(x => mapsLookUp.ContainsKey(x)).Select(x => mapsLookUp[x]).Distinct();
-
-                                if (allRegionMaps.ContainsKey(region.Key))
-                                {
-                                    // Maps from different floors have to be merged in.
-                                    _loadingIndicator.Report($"Expanding floor {floorId} of {regionName}..");
-                                    allRegionMaps[region.Key] = allRegionMaps[region.Key].Union(publicMapIds);
-                                }
-                                else
-                                {
-                                    // Add region if it wasn't yet.
-                                    allRegionMaps.Add(region.Key, publicMapIds);
-                                    allRegionNames.Add(region.Key, regionName);
-                                    _loadingIndicator.Report($"Adding floor {floorId} of {regionName}..");
-                                }
-                            }
+                    foreach (var region in mapsByRegion) {
+                        if (regions.All(x => x != region.Key)) {
+                            regions.Add(region.Key);
                         }
-                        catch (NotFoundException)
-                        {
-                            continue; // Ignore. Floor id does not exist somehow...
+
+                        var regionName = floorRegions.First(x => x.Id == region.Key).Name;
+
+                        var validMaps = region.Value.Where(x => mapsLookUp.Values.Any(id => x.Id == id)).ToList();
+                        foreach (var map in validMaps) {
+                            if (allMapNames.ContainsKey(map.Id)) {
+                                continue;
+                            }
+
+                            allMapNames.Add(map.Id, map.Name);
+                        }
+
+                        #if DEBUG
+                        // Helping out Discord RPC (https://github.com/OpNop/GW2-RPC-Resources) to gather unresolved maps..
+                        notFound.AddRange(region.Value
+                                                .Where(x => !mapsLookUp.ContainsKey(MapUtil.GetSHA1(continentId, x.ContinentRect)))
+                                                .Select(x => (continentId, x)));
+                        #endif
+
+                        var publicMapIds = region.Value.Select(x => MapUtil.GetSHA1(continentId, x.ContinentRect)).Where(x => mapsLookUp.ContainsKey(x)).Select(x => mapsLookUp[x]).Distinct();
+
+                        if (allRegionMaps.ContainsKey(region.Key)) {
+                            // Maps from different floors have to be merged in.
+                            allRegionMaps[region.Key] = allRegionMaps[region.Key].Union(publicMapIds);
+                        } else {
+                            // Add region if it wasn't yet.
+                            allRegionMaps.Add(region.Key, publicMapIds);
+                            allRegionNames.Add(region.Key, regionName);
                         }
                     }
-                    _continentRegions.Add(continentId, regions);
                 }
-                _regionMaps = allRegionMaps;
-                _regionNames = allRegionNames;
-                _mapNames = allMapNames;
-#if DEBUG
-                System.IO.File.WriteAllLines(System.IO.Path.Combine(MusicMixer.Instance.ModuleDirectory, "unresolved_maps.txt"), 
-                    notFound.DistinctBy(x => MapUtil.GetSHA1(x.Item1, x.Item2.ContinentRect))
-                        .Select(x => $"\"{MapUtil.GetSHA1(x.Item1, x.Item2.ContinentRect)}\": {x.Item2.Id}, // {x.Item2.Name} ({x.Item2.Id})"));
-#endif
+                _continentRegions.Add(continentId, regions);
             }
-            catch (RequestException e)
-            {
-                MusicMixer.Logger.Error(e, e.Message);
-            }
+            _regionMaps  = allRegionMaps;
+            _regionNames = allRegionNames;
+            _mapNames    = allMapNames;
+
+            #if DEBUG
+            System.IO.File.WriteAllLines(System.IO.Path.Combine(MusicMixer.Instance.ModuleDirectory, "unresolved_maps.txt"), 
+                                         notFound.DistinctBy(x => MapUtil.GetSHA1(x.Item1, x.Item2.ContinentRect))
+                                                 .Select(x => $"\"{MapUtil.GetSHA1(x.Item1, x.Item2.ContinentRect)}\": {x.Item2.Id}, // {x.Item2.Name} ({x.Item2.Id})"));
+            #endif
         }
 
         private async Task<Dictionary<string, int>> LoadMapLookUp()
