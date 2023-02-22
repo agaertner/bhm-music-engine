@@ -3,6 +3,7 @@ using Blish_HUD.Controls;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
+using Blish_HUD.Extended;
 
 namespace Nekres.Music_Mixer.Core.UI.Controls
 {

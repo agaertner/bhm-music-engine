@@ -1,5 +1,6 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Content;
+using Blish_HUD.Extended;
 using LiteDB;
 using Microsoft.Xna.Framework.Graphics;
 using Nekres.Music_Mixer.Core.Player.API;
@@ -15,8 +16,7 @@ using System.Linq.Expressions;
 using System.Net;
 using Image = SixLabors.ImageSharp.Image;
 
-namespace Nekres.Music_Mixer.Core.Services
-{
+namespace Nekres.Music_Mixer.Core.Services {
     internal class DataService : IDisposable
     {
         private LiteDatabase _db;
@@ -45,7 +45,8 @@ namespace Nekres.Music_Mixer.Core.Services
             if (string.IsNullOrEmpty(url)) return;
             var client = new WebClient();
             client.OpenReadAsync(new Uri(url));
-            client.OpenReadCompleted += async (o, e) =>
+
+            client.OpenReadCompleted += (o, e) =>
             {
                 try
                 {
@@ -53,14 +54,16 @@ namespace Nekres.Music_Mixer.Core.Services
                     if (e.Error != null) throw e.Error;
 
                     var stream = e.Result;
-                    using var image = await Image.LoadAsync(stream);
-                    using var ms = new MemoryStream();
-                    await image.SaveAsync(ms, JpegFormat.Instance);
+                    using var image = Image.Load(stream);
+                    using var ms    = new MemoryStream();
+                    image.Save(ms, JpegFormat.Instance);
                     ms.Position = 0;
                     _thumbnails.Upload(id, url, ms);
                     stream.Close();
                     ((WebClient)o).Dispose();
-                    var thumb = Texture2D.FromStream(GameService.Graphics.GraphicsDevice, ms);
+
+                    using var gdx   = GameService.Graphics.LendGraphicsDeviceContext();
+                    var       thumb = Texture2D.FromStream(gdx.GraphicsDevice, ms);
                     tex.SwapTexture(thumb);
                 }
                 catch (Exception ex) when (ex is WebException or ImageFormatException or ArgumentException or InvalidOperationException)
@@ -74,9 +77,9 @@ namespace Nekres.Music_Mixer.Core.Services
         {
             var texture = _thumbnails.OpenRead(model.Uri);
             if (texture == null) return;
-            try
-            {
-                var thumbnail = Texture2D.FromStream(GameService.Graphics.GraphicsDevice, texture);
+            try {
+                using var gdx       = GameService.Graphics.LendGraphicsDeviceContext();
+                var       thumbnail = Texture2D.FromStream(gdx.GraphicsDevice, texture);
                 model.Thumbnail.SwapTexture(thumbnail);
             }
             catch (InvalidOperationException e)

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Blish_HUD.Extended;
 
 namespace Nekres.Music_Mixer.Core.Services.Entities
 {

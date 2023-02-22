@@ -1,6 +1,7 @@
 ﻿using System;
 using Blish_HUD;
 using Blish_HUD.Controls;
+using Blish_HUD.Extended;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
