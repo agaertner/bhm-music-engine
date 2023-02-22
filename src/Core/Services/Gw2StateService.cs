@@ -48,7 +48,10 @@ namespace Nekres.Music_Mixer.Core.Services
         public TyrianTime TyrianTime { 
             get => _prevTyrianTime;
             private set {
-                if (_prevTyrianTime == value) return;
+                if (_prevTyrianTime == value) {
+                    return;
+                }
+
                 _prevTyrianTime = value;
                 TyrianTimeChanged?.Invoke(this, new ValueEventArgs<TyrianTime>(value));
             }
@@ -58,7 +61,10 @@ namespace Nekres.Music_Mixer.Core.Services
         public bool IsSubmerged {
             get => _prevIsSubmerged; 
             private set {
-                if (_prevIsSubmerged == value) return;
+                if (_prevIsSubmerged == value) {
+                    return;
+                }
+
                 _prevIsSubmerged = value;
                 IsSubmergedChanged?.Invoke(this, new ValueEventArgs<bool>(value));
             }
@@ -68,7 +74,10 @@ namespace Nekres.Music_Mixer.Core.Services
         public bool IsDowned {
             get => _prevIsDowned; 
             private set {
-                if (_prevIsDowned == value) return;
+                if (_prevIsDowned == value) {
+                    return;
+                }
+
                 _prevIsDowned = value;
                 IsDownedChanged?.Invoke(this, new ValueEventArgs<bool>(value));
             }
@@ -122,7 +131,11 @@ namespace Nekres.Music_Mixer.Core.Services
                 switch (t) {
                     case Trigger.Mounting: 
                     case Trigger.UnMounting:
-                        if (!MusicMixer.Instance.ToggleMountedPlaylistSetting.Value) return; break;
+                        if (!MusicMixer.Instance.ToggleMountedPlaylistSetting.Value) {
+                            return;
+                        }
+
+                        break;
                     case Trigger.Submerging: 
                     case Trigger.Emerging:
                         return;
@@ -223,14 +236,17 @@ namespace Nekres.Music_Mixer.Core.Services
         {
             IsDowned = false;
 
-            if (MusicMixer.Instance.ToggleMountedPlaylistSetting.Value && Gw2Mumble.PlayerCharacter.CurrentMount > 0)
+            if (MusicMixer.Instance.ToggleMountedPlaylistSetting.Value && Gw2Mumble.PlayerCharacter.CurrentMount > 0) {
                 return State.Mounted;
+            }
 
-            if (Gw2Mumble.CurrentMap.IsCompetitiveMode && !Gw2Mumble.CurrentMap.Type.IsWvW() && Gw2Mumble.CurrentMap.Id != 350)
+            if (Gw2Mumble.CurrentMap.IsCompetitiveMode && !Gw2Mumble.CurrentMap.Type.IsWvW() && Gw2Mumble.CurrentMap.Id != 350) {
                 return State.Competitive;
+            }
 
-            if (Gw2Mumble.CurrentMap.Type.IsPublic() || Gw2Mumble.CurrentMap.Type.IsInstance())
+            if (Gw2Mumble.CurrentMap.Type.IsPublic() || Gw2Mumble.CurrentMap.Type.IsInstance()) {
                 return State.Ambient;
+            }
 
             return State.StandBy;
         }
@@ -249,7 +265,9 @@ namespace Nekres.Music_Mixer.Core.Services
         private void CombatEventReceived(object o, RawCombatEventArgs e) {
             if (e.CombatEvent == null || 
                 e.CombatEvent.Ev == null || 
-                e.EventType == RawCombatEventArgs.CombatEventType.Local) return;
+                e.EventType == RawCombatEventArgs.CombatEventType.Local) {
+                return;
+            }
 
             // Check state changes of local player.
             if (e.CombatEvent.Src.Self > 0) {
@@ -275,7 +293,10 @@ namespace Nekres.Music_Mixer.Core.Services
 
         private void OnMountChanged(object o, ValueEventArgs<MountType> e)
         {
-            if (_outOfCombatTimer.IsRunning || _outOfCombatTimerLong.IsRunning) return;
+            if (_outOfCombatTimer.IsRunning || _outOfCombatTimerLong.IsRunning) {
+                return;
+            }
+
             _stateMachine.Fire(e.Value > 0 ? Trigger.Mounting : Trigger.UnMounting);
         }
 

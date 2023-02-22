@@ -153,7 +153,10 @@ namespace Nekres.Music_Mixer
 
         private void UpdateModuleLoading(string loadingMessage)
         {
-            if (_cornerIcon == null) return;
+            if (_cornerIcon == null) {
+                return;
+            }
+
             _cornerIcon.LoadingMessage = loadingMessage;
         }
 
@@ -200,16 +203,20 @@ namespace Nekres.Music_Mixer
             GameService.GameIntegration.Gw2Instance.Gw2AcquiredFocus += OnGw2AcquiredFocus;
             GameService.GameIntegration.Gw2Instance.Gw2Closed += OnGw2Closed;
 
-            if (ToggleDebugHelper.Value)
+            if (ToggleDebugHelper.Value) {
                 BuildDebugPanel();
-            
+            }
+
             // Base handler must be called
             base.OnModuleLoaded(e);
         }
 
         private void OnGw2LostFocus(object o, EventArgs e)
         {
-            if (!MuteWhenInBackgroundSetting.Value) return;
+            if (!MuteWhenInBackgroundSetting.Value) {
+                return;
+            }
+
             AudioEngine?.Pause();
         }
 
@@ -224,7 +231,10 @@ namespace Nekres.Music_Mixer
 
         public void OnModuleIconClick(object o, MouseEventArgs e)
         {
-            if (this.MapService.IsLoading) return;
+            if (this.MapService.IsLoading) {
+                return;
+            }
+
             _moduleWindow?.ToggleWindow();
         }
 
@@ -235,28 +245,26 @@ namespace Nekres.Music_Mixer
 
         private async void OnStateChanged(object o, ValueChangedEventArgs<Gw2StateService.State> e)
         {
-            if (_debugPanel != null) _debugPanel.CurrentState = e.NewValue;
-
-            if (e.PreviousValue == Gw2StateService.State.Ambient)
-            {
-                switch (e.NewValue)
-                {
-                    // Save the ambient music when we are in an intermediate state.
-                    case Gw2StateService.State.Mounted:
-                    case Gw2StateService.State.Battle:
-                    case Gw2StateService.State.Submerged:
-                    case Gw2StateService.State.Victory:
-                        AudioEngine.Save();
-                        break;
-                }
+            if (_debugPanel != null) {
+                _debugPanel.CurrentState = e.NewValue;
             }
 
-            // Resume ambient music.
-            if (e.NewValue == Gw2StateService.State.Ambient)
-            {
-                if (await AudioEngine.PlayFromSave()) return;
+            switch (e.PreviousValue) {
+                case Gw2StateService.State.Mounted:
+                case Gw2StateService.State.Battle:
+                case Gw2StateService.State.Submerged:
+                case Gw2StateService.State.Victory:
+                    AudioEngine.Stop();
+                    break;
+                case Gw2StateService.State.Ambient:
+                    AudioEngine.Save();
+                    break;
             }
 
+            if (await AudioEngine.PlayFromSave()) {
+                return;
+            }
+            
             // Select new song if nothing is playing.
             await AudioEngine.Play(this.DataService.GetRandom()?.ToModel());
         }
@@ -272,12 +280,16 @@ namespace Nekres.Music_Mixer
         }
 
         private void OnToggleDebugHelperChanged(object o, ValueChangedEventArgs<bool> e) {
-            if (!GameService.GameIntegration.Gw2Instance.Gw2IsRunning) return;
+            if (!GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
+                return;
+            }
+
             if (!e.NewValue) {
                 _debugPanel?.Dispose();
                 _debugPanel = null;
-            } else
+            } else {
                 BuildDebugPanel();
+            }
         }
 
         private void BuildDebugPanel() {
@@ -325,7 +337,10 @@ namespace Nekres.Music_Mixer
 
         private void ExtractFile(string filePath) {
             var fullPath = Path.Combine(ModuleDirectory, filePath);
-            if (File.Exists(fullPath)) return;
+            if (File.Exists(fullPath)) {
+                return;
+            }
+
             using (var fs = ContentsManager.GetFileStream(filePath)) {
                 fs.Position = 0;
                 byte[] buffer = new byte[fs.Length];
