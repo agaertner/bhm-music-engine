@@ -48,7 +48,7 @@ namespace Nekres.Music_Mixer.Core.UI.Views
         protected override async Task<bool> Load(IProgress<string> progress)
         {
             progress.Report("Loading playlist...");
-            var models = MusicMixer.Instance.DataService.FindWhere(x =>
+            var models = MusicMixer.Instance.DataService.Search(x =>
                 x.State == this.Presenter.Model.State
                 && x.MapIds.Contains(this.Presenter.Model.MapId)
                 && x.DayTimes.Contains(this.Presenter.Model.DayCycle)
@@ -141,7 +141,7 @@ namespace Nekres.Music_Mixer.Core.UI.Views
 
         private void OnModelDeleted(object o, EventArgs e)
         {
-            MusicMixer.Instance.DataService.Delete((MusicContextModel)o);
+            MusicMixer.Instance.DataService.Remove(((MusicContextModel)o).Id);
         }
     }
 }
