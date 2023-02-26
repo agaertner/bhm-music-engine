@@ -20,10 +20,12 @@ using Image = SixLabors.ImageSharp.Image;
 namespace Nekres.Music_Mixer.Core.Services {
     internal class DataService : IDisposable
     {
-        private          ConnectionString     _connectionString;
-        private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
-        
-        private          Dictionary<string, HashSet<Guid>>   _playlists;
+        private readonly ReaderWriterLockSlim              _rwLock       = new ReaderWriterLockSlim();
+        private          ManualResetEvent                  _lockReleased = new ManualResetEvent(false);
+        private          bool                              _lockAcquired = false;
+
+        private          ConnectionString                  _connectionString;
+        private          Dictionary<string, HashSet<Guid>> _playlists;
 
         public DataService(string cacheDir) {
             _connectionString = new ConnectionString {
@@ -32,6 +34,28 @@ namespace Nekres.Music_Mixer.Core.Services {
             };
 
             _playlists = new Dictionary<string, HashSet<Guid>>();
+        }
+
+        private void AcquireWriteLock() {
+            try {
+                _rwLock.EnterWriteLock();
+                _lockAcquired = true;
+            } catch (Exception ex) {
+                MusicMixer.Logger.Debug(ex, ex.Message);
+            }
+        }
+
+        private void ReleaseWriteLock() {
+            try {
+                if (_lockAcquired) {
+                    _rwLock.ExitWriteLock();
+                    _lockAcquired = false;
+                }
+            } catch (Exception ex) {
+                MusicMixer.Logger.Debug(ex, ex.Message);
+            } finally {
+                _lockReleased.Set();
+            }
         }
 
         public void DownloadThumbnail(MusicContextModel model)
@@ -58,13 +82,13 @@ namespace Nekres.Music_Mixer.Core.Services {
                     image.Save(ms, JpegFormat.Instance);
                     ms.Position = 0;
 
-                    _rwLock.EnterWriteLock();
+                    this.AcquireWriteLock();
                     try {
                         using var db = new LiteDatabase(_connectionString);
                         var       thumbnails = db.GetStorage<string>("thumbnails", "thumbnail_chunks");
                         thumbnails.Upload(id, url, ms);
                     } finally {
-                        _rwLock.ExitWriteLock();
+                        this.ReleaseWriteLock();
                     }
 
                     stream.Close();
@@ -85,13 +109,13 @@ namespace Nekres.Music_Mixer.Core.Services {
 
             LiteFileStream<string> texture;
 
-            _rwLock.EnterWriteLock();
+            this.AcquireWriteLock();
             try {
                 using var db         = new LiteDatabase(_connectionString);
                 var       thumbnails = db.GetStorage<string>("thumbnails", "thumbnail_chunks");
                 texture = thumbnails.OpenRead(model.Uri);
             } finally {
-                _rwLock.ExitWriteLock();
+                this.ReleaseWriteLock();
             }
 
             if (texture == null) {
@@ -180,55 +204,46 @@ namespace Nekres.Music_Mixer.Core.Services {
         }
 
         public void Insert(MusicContextEntity track) {
-            _rwLock.EnterWriteLock();
+            this.AcquireWriteLock();
             try {
                 using var db = new LiteDatabase(_connectionString);
-
                 var tracks = db.GetCollection<MusicContextEntity>("music_contexts");
                 tracks.Insert(track);
-
             } finally {
-                _rwLock.ExitWriteLock();
+                this.ReleaseWriteLock();
             }
         }
 
         public void Remove(Guid id) {
-            _rwLock.EnterWriteLock();
+            this.AcquireWriteLock();
             try {
                 using var db = new LiteDatabase(_connectionString);
-
                 var tracks = db.GetCollection<MusicContextEntity>("music_contexts");
                 tracks.Delete(id);
-
             } finally {
-                _rwLock.ExitWriteLock();
+                this.ReleaseWriteLock();
             }
         }
 
         public List<MusicContextEntity> Search(Expression<Func<MusicContextEntity, bool>> expr) {
-            _rwLock.EnterReadLock();
+            this.AcquireWriteLock();
             try {
                 using var db = new LiteDatabase(_connectionString);
-
                 var tracks = db.GetCollection<MusicContextEntity>("music_contexts");
-
                 return tracks.Query().Where(expr).ToList();
-
             } finally {
-                _rwLock.ExitReadLock();
+                this.ReleaseWriteLock();
             }
         }
 
         public void Update(MusicContextEntity track) {
-            _rwLock.EnterWriteLock();
+            this.AcquireWriteLock();
             try {
                 using var db = new LiteDatabase(_connectionString);
-
                 var tracks = db.GetCollection<MusicContextEntity>("music_contexts");
                 tracks.Update(track);
-
             } finally {
-                _rwLock.ExitWriteLock();
+                this.ReleaseWriteLock();
             }
         }
 
@@ -241,7 +256,19 @@ namespace Nekres.Music_Mixer.Core.Services {
         /// </remarks>
         public void Dispose()
         {
+            // Wait for the lock to be released
+            if (_lockAcquired) {
+                _lockReleased.WaitOne(500);
+            }
+            
+            _lockReleased.Dispose();
 
+            // Dispose the lock
+            try {
+                _rwLock.Dispose();
+            } catch (Exception ex) {
+                MusicMixer.Logger.Debug(ex, ex.Message);
+            }
         }
     }
 }
