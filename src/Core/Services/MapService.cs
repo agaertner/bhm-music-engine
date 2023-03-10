@@ -99,67 +99,51 @@ namespace Nekres.Music_Mixer.Core.Services {
                 return;
             }
 
-            var allRegionNames = new Dictionary<int, string>();
-            var allRegionMaps = new Dictionary<int, IEnumerable<int>>();
-            var allMapNames = new Dictionary<int, string>();
+            var allRegionNames   = new Dictionary<int, string>();
+            var allRegionMaps    = new Dictionary<int, IEnumerable<int>>();
+            var allMapNames      = new Dictionary<int, string>();
 
-            var totalFloorCount = continents.SelectMany(x => x.Floors).Count();
-            int floor = 0;
             foreach (var continent in continents) {
 
                 // Crawl each floor to get all maps...
-                var regions = new List<int>();
-                foreach (var floorId in continent.Floors)
-                {
-                    var floorRegions = await RetryAsync(() => GameService.Gw2WebApi.AnonymousConnection.Client.V2
-                                                                         .Continents[continent.Id]
-                                                                         .Floors[floorId]
-                                                                         .Regions.AllAsync()).Unwrap();
+                var floors = await RetryAsync(() => GameService.Gw2WebApi.AnonymousConnection.Client.V2
+                                                                .Continents[continent.Id]
+                                                                .Floors.AllAsync()).Unwrap();
 
-                    if (floorRegions == default || !floorRegions.Any()) {
-                        continue;
-                    }
-
-                    var mapsByRegion = floorRegions.ToDictionary(x => x.Id, x => x.Maps.Select(y => y.Value));
-
-                    foreach (var region in mapsByRegion) {
-                        if (regions.All(x => x != region.Key)) {
-                            regions.Add(region.Key);
-                        }
-
-                        var regionName = floorRegions.First(x => x.Id == region.Key).Name;
-
-                        var validMaps = region.Value.Where(x => mapsLookUp.Values.Any(id => x.Id == id)).ToList();
-                        foreach (var map in validMaps) {
-                            if (allMapNames.ContainsKey(map.Id)) {
-                                continue;
-                            }
-
-                            allMapNames.Add(map.Id, map.Name);
-                        }
-
-                        var publicMapIds = region.Value.Select(x => MapUtil.GetSHA1(continent.Id, 
-                                                                                    (int)x.ContinentRect.TopLeft.X, 
-                                                                                    (int)x.ContinentRect.TopLeft.Y, 
-                                                                                    (int)x.ContinentRect.BottomRight.X,
-                                                                                    (int)x.ContinentRect.BottomRight.Y)).Where(x => mapsLookUp.ContainsKey(x)).Select(x => mapsLookUp[x]).Distinct();
-
-                        if (allRegionMaps.ContainsKey(region.Key)) {
-                            // Maps from different floors have to be merged in.
-                            allRegionMaps[region.Key] = allRegionMaps[region.Key].Union(publicMapIds);
-                        } else {
-                            // Add region if it wasn't yet.
-                            allRegionMaps.Add(region.Key, publicMapIds);
-                            allRegionNames.Add(region.Key, regionName);
-                        }
-                    }
-
-                    // Increment shared counter
-                    float progress = Interlocked.Increment(ref floor) * 100f / totalFloorCount;
-                    _loadingIndicator.Report($"Loading.. {Math.Round(progress)}%");
+                if (floors == default || !floors.Any()) {
+                    continue;
                 }
 
-                _continentRegions.Add(continent.Id, regions);
+                var regions = floors.SelectMany(x => x.Regions.Values).ToList();
+
+                foreach (var region in regions) {
+
+                    var validMaps = region.Maps.Values.Where(x => mapsLookUp.Values.Any(id => x.Id == id)).ToList();
+                    foreach (var map in validMaps) {
+                        if (allMapNames.ContainsKey(map.Id)) {
+                            continue;
+                        }
+
+                        allMapNames.Add(map.Id, map.Name);
+                    }
+
+                    var publicMapIds = region.Maps.Values.Select(x => MapUtil.GetSHA1(continent.Id, 
+                                                                                (int)x.ContinentRect.TopLeft.X, 
+                                                                                (int)x.ContinentRect.TopLeft.Y, 
+                                                                                (int)x.ContinentRect.BottomRight.X,
+                                                                                (int)x.ContinentRect.BottomRight.Y)).Where(x => mapsLookUp.ContainsKey(x)).Select(x => mapsLookUp[x]).Distinct();
+
+                    if (allRegionMaps.ContainsKey(region.Id)) {
+                        // Maps from different floors have to be merged in.
+                        allRegionMaps[region.Id] = allRegionMaps[region.Id].Union(publicMapIds);
+                    } else {
+                        // Add region if it wasn't yet.
+                        allRegionMaps.Add(region.Id, publicMapIds);
+                        allRegionNames.Add(region.Id, region.Name);
+                    }
+                }
+
+                _continentRegions.Add(continent.Id, regions.Select(x => x.Id));
             }
             _regionMaps  = allRegionMaps;
             _regionNames = allRegionNames;
