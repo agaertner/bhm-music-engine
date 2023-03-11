@@ -213,12 +213,10 @@
     <Compile Include="_Extensions\EnumerableExtensions.cs" />
     <Compile Include="_Extensions\MapTypeExtensions.cs" />
     <Compile Include="_Extensions\SpriteBatchExtensions.cs" />
-    <Compile Include="_Extensions\StringExtensions.cs" />
     <Compile Include="_Extensions\TimeSpanExtensions.cs" />
     <Compile Include="_Extensions\TrackBarExtensions.cs" />
     <Compile Include="_Extensions\WaveStreamExtensions.cs" />
     <Compile Include="_Utils\FileUtil.cs" />
-    <Compile Include="_Utils\MapUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">

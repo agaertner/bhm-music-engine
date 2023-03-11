@@ -1,4 +1,5 @@
 ﻿using Blish_HUD;
+using Blish_HUD.Extended;
 using Blish_HUD.Modules.Managers;
 using Gw2Sharp.WebApi.Exceptions;
 using Microsoft.Xna.Framework.Graphics;
@@ -9,11 +10,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Gw2Sharp.WebApi.V2;
-using Gw2Sharp.WebApi.V2.Models;
 
-namespace Nekres.Music_Mixer.Core.Services
-{
+namespace Nekres.Music_Mixer.Core.Services {
     internal class MapService : IDisposable
     {
         private Dictionary<int, IEnumerable<int>> _continentRegions;
@@ -95,113 +93,100 @@ namespace Nekres.Music_Mixer.Core.Services
         private async Task RequestRegions()
         {
             var mapsLookUp = await LoadMapLookUp();
-#if DEBUG
-            var notFound = new List<(int, ContinentFloorRegionMap)>();
-#endif
-            IApiV2ObjectList<int> continentIds;
+            var continents = await RetryAsync(() => GameService.Gw2WebApi.AnonymousConnection.Client.V2.Continents.AllAsync()).Unwrap();
 
-            try {
-                continentIds = await GameService.Gw2WebApi.AnonymousConnection.Client.V2.Continents.IdsAsync();
-            } catch (RequestException e) {
-                MusicMixer.Logger.Error(e, e.Message);
+            if (continents == default || !continents.Any()) {
                 return;
             }
 
-            if (!continentIds.Any()) {
-                return;
-            }
+            var allRegionNames   = new Dictionary<int, string>();
+            var allRegionMaps    = new Dictionary<int, IEnumerable<int>>();
+            var allMapNames      = new Dictionary<int, string>();
 
-            var allRegionNames = new Dictionary<int, string>();
-            var allRegionMaps = new Dictionary<int, IEnumerable<int>>();
-            var allMapNames = new Dictionary<int, string>();
-            foreach (var continentId in continentIds) {
+            int totalMaps = 0;
+            int progress  = 0;
+            foreach (var continent in continents) {
 
-                IApiV2ObjectList<int> floorIds;
+                // Crawl each floor to get all maps...
+                var floors = await RetryAsync(() => GameService.Gw2WebApi.AnonymousConnection.Client.V2
+                                                                .Continents[continent.Id]
+                                                                .Floors.AllAsync()).Unwrap();
 
-                try {
-                    floorIds = await GameService.Gw2WebApi.AnonymousConnection.Client.V2.Continents[continentId].Floors.IdsAsync();
-                } catch (RequestException e) {
-                    MusicMixer.Logger.Error(e, e.Message);
-                    break;
-                }
-
-                if (!floorIds.Any()) {
+                if (floors == default || !floors.Any()) {
                     continue;
                 }
 
-                // Crawl each floor to get all maps...
-                var   regions = new List<int>();
-                float i = 0;
-                foreach (var floorId in floorIds)
-                {
-                    _loadingIndicator.Report($"Loading.. {Math.Round(i++ / floorIds.Count * 100)}%");
+                var regions = floors.SelectMany(x => x.Regions.Values).ToList();
 
-                    IApiV2ObjectList<ContinentFloorRegion> floorRegions;
+                foreach (var region in regions) {
+                    
+                    var validMaps = region.Maps.Values.Where(x => 
+                                                                 mapsLookUp.Values.Any(id => x.Id == id) && !allMapNames.ContainsKey(x.Id)).ToList();
 
-                    try {
-                        floorRegions = await GameService.Gw2WebApi.AnonymousConnection.Client.V2
-                                                        .Continents[continentId]
-                                                        .Floors[floorId]
-                                                        .Regions.AllAsync();
-                    } catch (NotFoundException) {
-                        continue; // Ignore. Floor id does not exist somehow...
-                    } catch (RequestException e) {
-                        MusicMixer.Logger.Error(e, e.Message);
-                        break;
+                    var newTotal = Interlocked.Add(ref totalMaps, validMaps.Count);
+
+                    foreach (var map in validMaps) {
+                        // Report progress
+                        var newProgress = Interlocked.Increment(ref progress);
+                        _loadingIndicator.Report($"Loading... {map.Name} ({Math.Round(newProgress * 100f / newTotal)}%)");
+
+                        allMapNames.Add(map.Id, map.Name);
                     }
 
-                    if (!floorRegions.Any()) {
-                        continue;
-                    }
+                    var publicMapIds = region.Maps.Values.Select(x => MapUtil.GetSHA1(continent.Id, 
+                                                                                (int)x.ContinentRect.TopLeft.X, 
+                                                                                (int)x.ContinentRect.TopLeft.Y, 
+                                                                                (int)x.ContinentRect.BottomRight.X,
+                                                                                (int)x.ContinentRect.BottomRight.Y)).Where(x => mapsLookUp.ContainsKey(x)).Select(x => mapsLookUp[x]).Distinct();
 
-                    var mapsByRegion = floorRegions.ToDictionary(x => x.Id, x => x.Maps.Select(y => y.Value));
-
-                    foreach (var region in mapsByRegion) {
-                        if (regions.All(x => x != region.Key)) {
-                            regions.Add(region.Key);
-                        }
-
-                        var regionName = floorRegions.First(x => x.Id == region.Key).Name;
-
-                        var validMaps = region.Value.Where(x => mapsLookUp.Values.Any(id => x.Id == id)).ToList();
-                        foreach (var map in validMaps) {
-                            if (allMapNames.ContainsKey(map.Id)) {
-                                continue;
-                            }
-
-                            allMapNames.Add(map.Id, map.Name);
-                        }
-
-                        #if DEBUG
-                        // Helping out Discord RPC (https://github.com/OpNop/GW2-RPC-Resources) to gather unresolved maps..
-                        notFound.AddRange(region.Value
-                                                .Where(x => !mapsLookUp.ContainsKey(MapUtil.GetSHA1(continentId, x.ContinentRect)))
-                                                .Select(x => (continentId, x)));
-                        #endif
-
-                        var publicMapIds = region.Value.Select(x => MapUtil.GetSHA1(continentId, x.ContinentRect)).Where(x => mapsLookUp.ContainsKey(x)).Select(x => mapsLookUp[x]).Distinct();
-
-                        if (allRegionMaps.ContainsKey(region.Key)) {
-                            // Maps from different floors have to be merged in.
-                            allRegionMaps[region.Key] = allRegionMaps[region.Key].Union(publicMapIds);
-                        } else {
-                            // Add region if it wasn't yet.
-                            allRegionMaps.Add(region.Key, publicMapIds);
-                            allRegionNames.Add(region.Key, regionName);
-                        }
+                    if (allRegionMaps.ContainsKey(region.Id)) {
+                        // Maps from different floors have to be merged in.
+                        allRegionMaps[region.Id] = allRegionMaps[region.Id].Union(publicMapIds);
+                    } else {
+                        // Add region if it wasn't yet.
+                        allRegionMaps.Add(region.Id, publicMapIds);
+                        allRegionNames.Add(region.Id, region.Name);
                     }
                 }
-                _continentRegions.Add(continentId, regions);
+
+                _continentRegions.Add(continent.Id, regions.Select(x => x.Id));
             }
             _regionMaps  = allRegionMaps;
             _regionNames = allRegionNames;
             _mapNames    = allMapNames;
+        }
 
-            #if DEBUG
-            System.IO.File.WriteAllLines(System.IO.Path.Combine(MusicMixer.Instance.ModuleDirectory, "unresolved_maps.txt"), 
-                                         notFound.DistinctBy(x => MapUtil.GetSHA1(x.Item1, x.Item2.ContinentRect))
-                                                 .Select(x => $"\"{MapUtil.GetSHA1(x.Item1, x.Item2.ContinentRect)}\": {x.Item2.Id}, // {x.Item2.Name} ({x.Item2.Id})"));
-            #endif
+        private async Task<T> RetryAsync<T>(Func<T> func, int retries = 2, int delayMs = 30000) {
+            try {
+                return func();
+            } catch (Exception e) {
+
+                // Do not retry if requested resource does not exist or access is denied.
+                if (e is NotFoundException or BadRequestException or AuthorizationRequiredException) { 
+                    MusicMixer.Logger.Debug(e, e.Message);
+                    return default; 
+                }
+
+                if (retries > 0) {
+                    MusicMixer.Logger.Warn(e, $"Failed to pull data from the GW2 API. Retrying in 30 seconds (remaining retries: {retries}).");
+                    await Task.Delay(delayMs);
+                    return await RetryAsync(func, retries - 1);
+                }
+
+                switch (e) {
+                    case TooManyRequestsException:
+                        MusicMixer.Logger.Warn(e, "After multiple attempts no data could be loaded due to being rate limited by the API.");
+                        break;
+                    case RequestException or RequestException<string>:
+                        MusicMixer.Logger.Debug(e, e.Message);
+                        break;
+                    default:
+                        MusicMixer.Logger.Error(e, e.Message);
+                        break;
+                }
+
+                return default;
+            }
         }
 
         private async Task<Dictionary<string, int>> LoadMapLookUp()
