@@ -219,7 +219,7 @@ namespace Nekres.Music_Mixer.Core.Services {
             try {
                 using var db = new LiteDatabase(_connectionString);
                 var tracks = db.GetCollection<MusicContextEntity>("music_contexts");
-                tracks.Delete(id);
+                tracks.DeleteMany(x => x.Id.Equals(id));
             } finally {
                 this.ReleaseWriteLock();
             }
@@ -248,10 +248,10 @@ namespace Nekres.Music_Mixer.Core.Services {
         }
 
         /// <summary>
-        /// Closes the database connection.
+        /// Releases all resources held by <see cref="DataService"/>.
         /// </summary>
         /// <remarks>
-        ///  Will do nothing if the connection type is shared since it's closed after each operation.<br/>
+        ///  <see cref="LiteDatabase.Dispose"/> will do nothing if the connection type is shared since it's closed after each operation.<br/>
         ///  See also: <seealso href="https://www.litedb.org/docs/connection-string/"/>
         /// </remarks>
         public void Dispose()
