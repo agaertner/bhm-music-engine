@@ -103,6 +103,8 @@ namespace Nekres.Music_Mixer.Core.Services {
             var allRegionMaps    = new Dictionary<int, IEnumerable<int>>();
             var allMapNames      = new Dictionary<int, string>();
 
+            int totalMaps = 0;
+            int progress  = 0;
             foreach (var continent in continents) {
 
                 // Crawl each floor to get all maps...
@@ -117,12 +119,16 @@ namespace Nekres.Music_Mixer.Core.Services {
                 var regions = floors.SelectMany(x => x.Regions.Values).ToList();
 
                 foreach (var region in regions) {
+                    
+                    var validMaps = region.Maps.Values.Where(x => 
+                                                                 mapsLookUp.Values.Any(id => x.Id == id) && !allMapNames.ContainsKey(x.Id)).ToList();
 
-                    var validMaps = region.Maps.Values.Where(x => mapsLookUp.Values.Any(id => x.Id == id)).ToList();
+                    var newTotal = Interlocked.Add(ref totalMaps, validMaps.Count);
+
                     foreach (var map in validMaps) {
-                        if (allMapNames.ContainsKey(map.Id)) {
-                            continue;
-                        }
+                        // Report progress
+                        var newProgress = Interlocked.Increment(ref progress);
+                        _loadingIndicator.Report($"Loading... {map.Name} ({Math.Round(newProgress * 100f / newTotal)}%)");
 
                         allMapNames.Add(map.Id, map.Name);
                     }
@@ -150,19 +156,20 @@ namespace Nekres.Music_Mixer.Core.Services {
             _mapNames    = allMapNames;
         }
 
-        private async Task<T> RetryAsync<T>(Func<T> func, int retries = 2) {
+        private async Task<T> RetryAsync<T>(Func<T> func, int retries = 2, int delayMs = 30000) {
             try {
                 return func();
             } catch (Exception e) {
 
-                if (e is NotFoundException or BadRequestException) {
+                // Do not retry if requested resource does not exist or access is denied.
+                if (e is NotFoundException or BadRequestException or AuthorizationRequiredException) { 
                     MusicMixer.Logger.Debug(e, e.Message);
-                    return default; // Usually means that the resource requested does not exist.
+                    return default; 
                 }
 
                 if (retries > 0) {
                     MusicMixer.Logger.Warn(e, $"Failed to pull data from the GW2 API. Retrying in 30 seconds (remaining retries: {retries}).");
-                    await Task.Delay(30000);
+                    await Task.Delay(delayMs);
                     return await RetryAsync(func, retries - 1);
                 }
 
