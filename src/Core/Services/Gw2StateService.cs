@@ -257,7 +257,10 @@ namespace Nekres.Music_Mixer.Core.Services
         }
 
         private void CheckWaterLevel() => IsSubmerged = Gw2Mumble.PlayerCamera.Position.Z <= 0;
-        private void CheckTyrianTime() => TyrianTime = TyrianTimeUtil.GetCurrentDayCycle();
+        private void CheckTyrianTime() => TyrianTime = MusicMixer.Instance.ToggleFourDayCycleSetting.Value 
+                                                           ? TyrianTimeUtil.GetCurrentDayCycle() 
+                                                           : TyrianTimeUtil.GetCurrentDayCycle().Resolve();
+        
         private void OnGw2Closed(object sender, EventArgs e) => _stateMachine.Fire(Trigger.StandBy);
 
         #region ArcDps Events

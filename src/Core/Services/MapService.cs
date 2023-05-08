@@ -26,11 +26,8 @@ namespace Nekres.Music_Mixer.Core.Services {
 
         public bool IsLoading { get; private set; }
 
-        private ContentsManager _ctnMgr;
-
-        public MapService(ContentsManager ctnMgr, IProgress<string> loadingIndicator)
+        public MapService(IProgress<string> loadingIndicator)
         {
-            _ctnMgr = ctnMgr;
             _loadingIndicator = loadingIndicator;
             _continentRegions = new Dictionary<int, IEnumerable<int>>();
             _regionMaps = new Dictionary<int, IEnumerable<int>>();
@@ -60,7 +57,7 @@ namespace Nekres.Music_Mixer.Core.Services {
 
         public Texture2D GetMapThumb(int mapId)
         {
-            return _ctnMgr.GetTexture($"regions/maps/map_{mapId}.jpg");
+            return MusicMixer.Instance.ContentsManager.GetTexture($"regions/maps/map_{mapId}.jpg");
         }
 
         public string GetMapName(int mapId)
@@ -191,7 +188,7 @@ namespace Nekres.Music_Mixer.Core.Services {
 
         private async Task<Dictionary<string, int>> LoadMapLookUp()
         {
-            using var stream = _ctnMgr.GetFileStream("regions/maps/maps.jsonc");
+            using var stream = MusicMixer.Instance.ContentsManager.GetFileStream("regions/maps/maps.jsonc");
             stream.Position = 0;
             var buffer = new byte[stream.Length];
             await stream.ReadAsync(buffer, 0, buffer.Length);

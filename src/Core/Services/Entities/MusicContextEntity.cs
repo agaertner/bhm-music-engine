@@ -65,15 +65,6 @@ namespace Nekres.Music_Mixer.Core.Services.Entities
             };
         }
 
-        public static bool CanPlay(MusicContextEntity entity)
-        {
-            return entity.State == MusicMixer.Instance.Gw2State.CurrentState 
-                   && entity.DayTimes.Contains(MusicMixer.Instance.ToggleFourDayCycleSetting.Value ? TyrianTimeUtil.GetCurrentDayCycle() : TyrianTimeUtil.GetCurrentDayCycle().Resolve())
-                   && entity.MapIds.Contains(GameService.Gw2Mumble.CurrentMap.Id)
-                   && (!entity.ExcludedMapIds.Any() || !entity.ExcludedMapIds.Contains(GameService.Gw2Mumble.CurrentMap.Id))
-                   && (!entity.MountTypes.Any() || entity.MountTypes.Contains(GameService.Gw2Mumble.PlayerCharacter.CurrentMount));
-        }
-
         public static MusicContextEntity FromModel(MusicContextModel model)
         {
             return new MusicContextEntity

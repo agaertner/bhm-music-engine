@@ -10,7 +10,6 @@ using Microsoft.Xna.Framework.Graphics;
 using Nekres.Music_Mixer.Core.Player;
 using Nekres.Music_Mixer.Core.Player.API;
 using Nekres.Music_Mixer.Core.Services;
-using Nekres.Music_Mixer.Core.UI.Controls;
 using Nekres.Music_Mixer.Core.UI.Models;
 using Nekres.Music_Mixer.Core.UI.Views;
 using Nekres.Music_Mixer.Core.UI.Views.StateViews;
@@ -20,8 +19,7 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Nekres.Music_Mixer
-{
+namespace Nekres.Music_Mixer {
 
     [Export(typeof(Module))]
     public class MusicMixer : Module
@@ -42,21 +40,17 @@ namespace Nekres.Music_Mixer
 
         #region Settings
 
-        internal SettingEntry<float> MasterVolumeSetting;
-        internal SettingEntry<bool> ToggleMountedPlaylistSetting;
-        internal SettingEntry<bool> ToggleFourDayCycleSetting;
-        internal SettingEntry<bool> ToggleKeepAudioFilesSetting;
+        internal SettingEntry<float>        MasterVolumeSetting;
+        internal SettingEntry<bool>         ToggleMountedPlaylistSetting;
+        internal SettingEntry<bool>         ToggleFourDayCycleSetting;
         internal SettingEntry<AudioBitrate> AverageBitrateSetting;
-        internal SettingEntry<bool> ToggleDebugHelper;
-        internal SettingEntry<Point> MediaWidgetLocation;
-        private SettingEntry<bool> MuteWhenInBackgroundSetting;
+        internal SettingEntry<Point>        MediaWidgetLocation;
+        private  SettingEntry<bool>         MuteWhenInBackgroundSetting;
         #endregion
 
         public float MasterVolume => MathHelper.Clamp(MasterVolumeSetting.Value / 1000f, 0f, 1f);
 
         public string ModuleDirectory { get; private set; }
-
-        private DataPanel _debugPanel;
 
         internal AudioEngine AudioEngine;
         internal MapService MapService;
@@ -96,17 +90,9 @@ namespace Nekres.Music_Mixer
                 () => "Use dusk and dawn day cycles", 
                 () => "Whether dusk and dawn track attributes should be interpreted as unique day cycles.\nOtherwise dusk and dawn will be interpreted as night and day respectively.");
             
-            /*ToggleKeepAudioFilesSetting = settings.DefineSetting("KeepAudioFiles", false, 
-                () => "Keep audio files on disk",
-                () => "Whether streamed audio should be kept on disk.\nReduces delay for all future playback events after the first at the expense of disk space.\nMay also result in better audio quality.");*/
-
             AverageBitrateSetting = settings.DefineSetting("AverageBitrate", AudioBitrate.B320, 
                 () => "Average bitrate limit", 
                 () => "Sets the average bitrate of the audio used in streaming.");
-
-            ToggleDebugHelper = settings.DefineSetting("EnableDebugHelper", false, 
-                () => "Developer Mode", 
-                () => "Exposes internal information helpful for development.");
 
             var selfManaged = settings.AddSubCollection("selfManaged", false, false);
             MediaWidgetLocation = selfManaged.DefineSetting("mediaWidgetLocation", new Point((int)(0.82 * GameService.Graphics.SpriteScreen.Size.X), 30));
@@ -115,7 +101,7 @@ namespace Nekres.Music_Mixer
         protected override void Initialize()
         {
             ModuleDirectory = DirectoriesManager.GetFullDirectoryPath("music_mixer");
-            MapService = new MapService(this.ContentsManager, GetModuleProgressHandler());
+            MapService = new MapService(GetModuleProgressHandler());
             DataService = new DataService(this.ModuleDirectory);
             Gw2State = new Gw2StateService();
             AudioEngine = new AudioEngine();
@@ -168,16 +154,18 @@ namespace Nekres.Music_Mixer
         protected override void OnModuleLoaded(EventArgs e) {
             MasterVolumeSetting.Value = MathHelper.Clamp(MasterVolumeSetting.Value, 0f, 100f);
 
-            var windowRegion = new Rectangle(40, 26, 895 + 38, 780 - 56);
-            var contentRegion = new Rectangle(70, 41, 895 - 43, 780 - 142);
-            _moduleWindow = new TabbedWindow2(_backgroundTexture, windowRegion, contentRegion)
-            {
-                Parent = GameService.Graphics.SpriteScreen,
-                Emblem = _cornerTexture,
-                Location = new Point((GameService.Graphics.SpriteScreen.Width - windowRegion.Width) / 2, (GameService.Graphics.SpriteScreen.Height) / 2),
+            var windowRegion = new Rectangle(40, 26, 913, 691);
+            _moduleWindow = new TabbedWindow2(GameService.Content.DatAssetCache.GetTextureFromAssetId(155985),
+                                              windowRegion,
+                                              new Rectangle(70, 71, 839, 605)) {
+                Parent        = GameService.Graphics.SpriteScreen,
+                Title         = "Background Music",
+                Emblem        = _cornerTexture,
+                Subtitle      = this.Name,
                 SavesPosition = true,
-                Title = this.Name,
-                Id = $"{nameof(MusicMixer)}_d42b52ce-74f1-4e6d-ae6b-a8724029f0a3"
+                Id            = $"{nameof(MusicMixer)}_d42b52ce-74f1-4e6d-ae6b-a8724029f0a3",
+                Left          = (GameService.Graphics.SpriteScreen.Width  - windowRegion.Width) / 2,
+                Top           = (GameService.Graphics.SpriteScreen.Height - windowRegion.Height)  / 2
             };
 
             _moduleWindow.Tabs.Add(new Tab(_mountTabIcon, () => new MountView(_tabModels[Gw2StateService.State.Mounted]), "Mounted"));
@@ -193,7 +181,6 @@ namespace Nekres.Music_Mixer
             _cornerIcon.LeftMouseButtonReleased += OnModuleIconClick;
             _cornerIcon.RightMouseButtonReleased += OnModuleIconRightMouseButtonReleased;
 
-            ToggleDebugHelper.SettingChanged += OnToggleDebugHelperChanged;
             MasterVolumeSetting.SettingChanged += MasterVolumeSettingChanged;
 
             Gw2State.IsSubmergedChanged += OnIsSubmergedChanged;
@@ -202,10 +189,6 @@ namespace Nekres.Music_Mixer
             GameService.GameIntegration.Gw2Instance.Gw2LostFocus += OnGw2LostFocus;
             GameService.GameIntegration.Gw2Instance.Gw2AcquiredFocus += OnGw2AcquiredFocus;
             GameService.GameIntegration.Gw2Instance.Gw2Closed += OnGw2Closed;
-
-            if (ToggleDebugHelper.Value) {
-                BuildDebugPanel();
-            }
 
             // Base handler must be called
             base.OnModuleLoaded(e);
@@ -245,10 +228,6 @@ namespace Nekres.Music_Mixer
 
         private async void OnStateChanged(object o, ValueChangedEventArgs<Gw2StateService.State> e)
         {
-            if (_debugPanel != null) {
-                _debugPanel.CurrentState = e.NewValue;
-            }
-
             switch (e.PreviousValue) {
                 case Gw2StateService.State.Mounted:
                 case Gw2StateService.State.Battle:
@@ -279,30 +258,6 @@ namespace Nekres.Music_Mixer
             AudioEngine.ToggleSubmerged(e.Value);
         }
 
-        private void OnToggleDebugHelperChanged(object o, ValueChangedEventArgs<bool> e) {
-            if (!GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
-                return;
-            }
-
-            if (!e.NewValue) {
-                _debugPanel?.Dispose();
-                _debugPanel = null;
-            } else {
-                BuildDebugPanel();
-            }
-        }
-
-        private void BuildDebugPanel() {
-            _debugPanel?.Dispose();
-            _debugPanel = new DataPanel {
-                Parent = GameService.Graphics.SpriteScreen,
-                Size = new Point(GameService.Graphics.SpriteScreen.Width, GameService.Graphics.SpriteScreen.Height),
-                Location = new Point(0,0),
-                ZIndex = -9999,
-                CurrentState = Gw2State.CurrentState
-            };
-        }
-
         /// <inheritdoc />
         protected override void Unload()
         {
@@ -312,7 +267,6 @@ namespace Nekres.Music_Mixer
             MasterVolumeSetting.SettingChanged -= MasterVolumeSettingChanged;
             Gw2State.IsSubmergedChanged -= OnIsSubmergedChanged;
             Gw2State.StateChanged -= OnStateChanged;
-            ToggleDebugHelper.SettingChanged -= OnToggleDebugHelperChanged;
             _moduleWindow?.Dispose();
             if (_cornerIcon != null)
             {
@@ -321,7 +275,6 @@ namespace Nekres.Music_Mixer
                 _cornerIcon.Dispose();
             }
             AudioEngine?.Dispose();
-            _debugPanel?.Dispose();
             this.Gw2State?.Dispose();
             this.DataService?.Dispose();
             _mountTabIcon?.Dispose();
@@ -330,6 +283,10 @@ namespace Nekres.Music_Mixer
             _competitiveTabIcon?.Dispose();
             _backgroundTexture?.Dispose();
             _cornerTexture?.Dispose();
+
+            if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
+                AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 1);
+            }
 
             // All static members must be manually unset
             Instance = null;
@@ -341,13 +298,12 @@ namespace Nekres.Music_Mixer
                 return;
             }
 
-            using (var fs = ContentsManager.GetFileStream(filePath)) {
-                fs.Position = 0;
-                byte[] buffer = new byte[fs.Length];
-                var content = fs.Read(buffer, 0, (int)fs.Length);
-                Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
-                File.WriteAllBytes(fullPath, buffer);
-            }
+            using var fs = this.ContentsManager.GetFileStream(filePath);
+            fs.Position = 0;
+            byte[] buffer  = new byte[fs.Length];
+            var    content = fs.Read(buffer, 0, (int)fs.Length);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            File.WriteAllBytes(fullPath, buffer);
         }
     }
 }

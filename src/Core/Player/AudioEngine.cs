@@ -1,14 +1,13 @@
 ﻿using Blish_HUD;
+using Microsoft.Xna.Framework;
 using Nekres.Music_Mixer.Core.Player.API;
 using Nekres.Music_Mixer.Core.UI.Controls;
 using Nekres.Music_Mixer.Core.UI.Models;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Xna.Framework;
 
-namespace Nekres.Music_Mixer.Core.Player
-{
+namespace Nekres.Music_Mixer.Core.Player {
     internal class AudioEngine : IDisposable
     {
         private bool _muted;
@@ -45,6 +44,8 @@ namespace Nekres.Music_Mixer.Core.Player
         public bool Loading { get; private set; }
 
         private TaskScheduler _scheduler;
+
+        private int GameVolume;
 
         public AudioEngine()
         {
@@ -133,6 +134,10 @@ namespace Nekres.Music_Mixer.Core.Player
                     _soundtrack.Dispose();
                 }
 
+                if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
+                    AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 0.1f);
+                }
+
                 _soundtrack = newTrack;
                 _soundtrack.Muted = this.Muted;
                 _soundtrack.Finished += OnSoundtrackFinished;
@@ -193,6 +198,10 @@ namespace Nekres.Music_Mixer.Core.Player
 
         public void Stop()
         {
+            if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
+                AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 1);
+            }
+
             _soundtrack?.Dispose();
         }
 
@@ -228,7 +237,10 @@ namespace Nekres.Music_Mixer.Core.Player
 
         public async Task<bool> PlayFromSave()
         {
-            if (_prevMusicModel == null || !MusicContextModel.CanPlay(_prevMusicModel)
+            if (_prevMusicModel == null || !_prevMusicModel.IsContext(MusicMixer.Instance.Gw2State.CurrentState, 
+                                                                      GameService.Gw2Mumble.CurrentMap.Id, 
+                                                                      MusicMixer.Instance.Gw2State.TyrianTime, 
+                                                                      GameService.Gw2Mumble.PlayerCharacter.CurrentMount)
                                         || _prevTime > _prevMusicModel.Duration) // Time out of bounds
             {
                 return false;
