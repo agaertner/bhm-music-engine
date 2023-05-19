@@ -62,6 +62,7 @@
   <ItemGroup>
     <Compile Include="..\submodules\bhud-extended\**\*.cs" Link="_Submodules\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Remove="..\submodules\**\AssemblyInfo.cs" />
+    <Compile Include="_Utils\AudioUtil.cs" />
     <EmbeddedResource Include="..\submodules\bhud-extended\**\Resources\*.png" Link="_Submodules\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
@@ -180,7 +181,6 @@
     <Compile Include="Core\UI\Controls\MapThumb.cs" />
     <Compile Include="Core\UI\Controls\RegionEntry.cs" />
     <Compile Include="Core\UI\Controls\MapEntry.cs" />
-    <Compile Include="Core\UI\Controls\DataPanel.cs" />
     <Compile Include="Core\Player\NTimer.cs" />
     <Compile Include="Core\Services\DataService.cs" />
     <Compile Include="Core\Services\Gw2StateService.cs" />

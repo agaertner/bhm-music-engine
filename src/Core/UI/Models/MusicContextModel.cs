@@ -195,13 +195,16 @@ namespace Nekres.Music_Mixer.Core.UI.Models
             Deleted?.Invoke(this, new ValueEventArgs<Guid>(this.Id));
         }
 
-        public static bool CanPlay(MusicContextModel model)
-        {
-            return model.State == MusicMixer.Instance.Gw2State.CurrentState 
-                   && model.DayTimes.Contains(MusicMixer.Instance.ToggleFourDayCycleSetting.Value ? TyrianTimeUtil.GetCurrentDayCycle() : TyrianTimeUtil.GetCurrentDayCycle().Resolve())
-                   && model.MapIds.Contains(GameService.Gw2Mumble.CurrentMap.Id)
-                   && (!model.ExcludedMapIds.Any() || !model.ExcludedMapIds.Contains(GameService.Gw2Mumble.CurrentMap.Id))
-                   && (!model.MountTypes.Any() || model.MountTypes.Contains(GameService.Gw2Mumble.PlayerCharacter.CurrentMount));
+        public bool IsContext(Gw2StateService.State state, int mapId, TyrianTime dayCycle, MountType mount) {
+            if (this.State != state && this.DayTimes.All(x => (MusicMixer.Instance.ToggleFourDayCycleSetting.Value ? x : x.Resolve()) != dayCycle)) {
+                return false;
+            }
+
+            if (this.State == Gw2StateService.State.Mounted) {
+                return this.MountTypes.Contains(mount);
+            }
+
+            return this.MapIds.Contains(mapId);
         }
     }
 }

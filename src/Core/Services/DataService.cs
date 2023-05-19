@@ -15,6 +15,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Threading;
+using Gw2Sharp.Models;
 using Image = SixLabors.ImageSharp.Image;
 
 namespace Nekres.Music_Mixer.Core.Services {
@@ -136,13 +137,8 @@ namespace Nekres.Music_Mixer.Core.Services {
 
         public void Upsert(MusicContextModel model)
         {
-            var entities = this.Search(x => x.Id.Equals(model.Id));
+            var entity = this.Search(x => x.Id.Equals(model.Id)).FirstOrDefault();
 
-            if (!entities.Any()) {
-                return;
-            }
-
-            var entity = entities.First();
             if (entity == null)
             {
                 entity = MusicContextEntity.FromModel(model);
@@ -160,26 +156,31 @@ namespace Nekres.Music_Mixer.Core.Services {
             }
         }
 
+
+
         public MusicContextEntity GetRandom()
         {
-            var state = MusicMixer.Instance.Gw2State.CurrentState;
-            var mapId = GameService.Gw2Mumble.CurrentMap.Id;
+            var state    = MusicMixer.Instance.Gw2State.CurrentState;
+            var mapId    = GameService.Gw2Mumble.CurrentMap.Id;
             var dayCycle = MusicMixer.Instance.Gw2State.TyrianTime;
-            var mount = GameService.Gw2Mumble.PlayerCharacter.CurrentMount;
+            var mount    = GameService.Gw2Mumble.PlayerCharacter.CurrentMount;
 
             // Get all tracks for state.
-            var tracks = this.Search(x => (x.State == state
-                                               && state != Gw2StateService.State.Mounted && x.MapIds.Contains(mapId)
-                                               || state == Gw2StateService.State.Mounted && x.State == Gw2StateService.State.Mounted)
-                                               && x.DayTimes.Contains(MusicMixer.Instance.ToggleFourDayCycleSetting.Value ? TyrianTimeUtil.GetCurrentDayCycle() : TyrianTimeUtil.GetCurrentDayCycle().Resolve())
-                                               && (!x.MountTypes.Any() || x.MountTypes.Contains(mount))).ToList();
+            var tracks = this.Search(x => 
+                                         x.State == state
+                                      && x.DayTimes.Contains(dayCycle)
+                                      && (x.State != Gw2StateService.State.Mounted 
+                                      && x.MapIds.Contains(mapId)
+                                      || x.State == Gw2StateService.State.Mounted
+                                      && x.MountTypes.Contains(mount))).ToList();
 
             if (!tracks.Any())
             {
                 return null;
             }
 
-            var context = $"{state}{mapId}{dayCycle}{mount}";
+
+            var context  = $"{state}{mapId}{dayCycle}{mount}";
             if (!_playlists.ContainsKey(context))
             {
                 _playlists.Add(context, new HashSet<Guid>());
