@@ -50,6 +50,12 @@ namespace Nekres.Music_Mixer.Core.Player {
         public AudioEngine()
         {
             _scheduler = TaskScheduler.FromCurrentSynchronizationContext();
+            _mediaWidget = new MediaWidget {
+                Parent   = GameService.Graphics.SpriteScreen,
+                Location = MusicMixer.Instance.MediaWidgetLocation.Value,
+                Enabled = MusicMixer.Instance.MediaWidgetVisible.Value,
+                Visible  = MusicMixer.Instance.MediaWidgetVisible.Value
+            };
         }
 
         public static float GetNormalizedVolume(float volume)
@@ -150,33 +156,25 @@ namespace Nekres.Music_Mixer.Core.Player {
 
         private void Notify(MusicContextModel model)
         {
-            if (model == null) {
+            if (model == null || !MusicMixer.Instance.MediaWidgetVisible.Value) {
                 return;
             }
 
-            _mediaWidget ??= new MediaWidget
-            {
-                Parent = GameService.Graphics.SpriteScreen,
-                Location = MusicMixer.Instance.MediaWidgetLocation.Value,
-                Visible = true
-            };
             _mediaWidget.Change(model, _soundtrack);
         }
 
         public void ToggleMediaWidget()
         {
-            if (_mediaWidget == null) {
-                return;
-            }
-
             if (_mediaWidget.Visible)
             {
                 _mediaWidget.Hide();
+                _mediaWidget.Enabled                         = false;
+                MusicMixer.Instance.MediaWidgetVisible.Value = false;
+                return;
             }
-            else
-            {
-                _mediaWidget?.Show();
-            }
+            _mediaWidget.Show();
+            _mediaWidget.Enabled                         = true;
+            MusicMixer.Instance.MediaWidgetVisible.Value = true;
         }
 
         public void ToggleSubmerged(bool enable) => _soundtrack?.ToggleSubmergedFx(enable);

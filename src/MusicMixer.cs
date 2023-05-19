@@ -45,6 +45,7 @@ namespace Nekres.Music_Mixer {
         internal SettingEntry<bool>         ToggleFourDayCycleSetting;
         internal SettingEntry<AudioBitrate> AverageBitrateSetting;
         internal SettingEntry<Point>        MediaWidgetLocation;
+        internal SettingEntry<bool>         MediaWidgetVisible;
         private  SettingEntry<bool>         MuteWhenInBackgroundSetting;
         #endregion
 
@@ -96,6 +97,7 @@ namespace Nekres.Music_Mixer {
 
             var selfManaged = settings.AddSubCollection("selfManaged", false, false);
             MediaWidgetLocation = selfManaged.DefineSetting("mediaWidgetLocation", new Point((int)(0.82 * GameService.Graphics.SpriteScreen.Size.X), 30));
+            MediaWidgetVisible  = selfManaged.DefineSetting("mediaWidgetVisible",  true);
         }
 
         protected override void Initialize()

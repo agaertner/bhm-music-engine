@@ -125,7 +125,7 @@ namespace Nekres.Music_Mixer.Core.UI.Controls
             }
             else if (_mouseOverTitle)
             {
-                this.BasicTooltipText = this.Model.Title;
+                this.BasicTooltipText = this.Model?.Title ?? string.Empty;
             }
             else if (_mouseOverCloseBtn)
             {
@@ -196,24 +196,30 @@ namespace Nekres.Music_Mixer.Core.UI.Controls
 
             // Draw thumbnail
             var thumbnailBounds = new Rectangle(MARGIN, (bounds.Height - 36) / 2, 64, 36);
-            if (this.Model.Thumbnail.HasTexture)
+            if (this.Model?.Thumbnail.HasTexture ?? false) {
                 spriteBatch.DrawOnCtrl(this, this.Model.Thumbnail, thumbnailBounds, Color.White);
-            else
+            } else {
                 LoadingSpinnerUtil.DrawLoadingSpinner(this, spriteBatch, new Rectangle(thumbnailBounds.Center.X - 16, thumbnailBounds.Center.Y - 16, 32, 32));
+            }
 
             // Draw icon box
             spriteBatch.DrawOnCtrl(this, _boxSprite, thumbnailBounds, Color.White);
 
             // Draw title
-            var title = this.Model.Title;
-            if (title.Length > 33)
+            var title = this.Model?.Title ?? string.Empty;
+            if (title.Length > 33) {
                 title = new string(title.Take(33).ToArray()) + "...";
+            }
+
             _titleBounds = new Rectangle(thumbnailBounds.Right + MARGIN, 0, bounds.Width - thumbnailBounds.Width - 100 - MARGIN * 2, bounds.Height / 2 - 10);
             spriteBatch.DrawStringOnCtrl(this, title, Content.DefaultFont14, _titleBounds, Color.White, false, true, 2, HorizontalAlignment.Left, VerticalAlignment.Bottom);
 
             // Draw artist
             var bottomTextBounds = new Rectangle(_titleBounds.X, _titleBounds.Bottom, _titleBounds.Width, bounds.Height / 2);
-            if (string.IsNullOrEmpty(this.Model.Artist)) return;
+            if (string.IsNullOrEmpty(this.Model?.Artist)) {
+                return;
+            }
+
             spriteBatch.DrawStringOnCtrl(this, this.Model.Artist, Content.DefaultFont12, bottomTextBounds, Color.LightGray, false, false, 0, HorizontalAlignment.Left, VerticalAlignment.Top);
 
             // Draw audio button
@@ -221,8 +227,13 @@ namespace Nekres.Music_Mixer.Core.UI.Controls
             spriteBatch.DrawOnCtrl(this, _texAudioBtn, _audioBtnBounds, _texAudioBtn.Bounds, Color.White);
             if (this.Soundtrack != null)
             {
-                if (this.Soundtrack.Muted) spriteBatch.DrawOnCtrl(this, _texAudioMuted, _audioBtnBounds, _texAudioMuted.Bounds, Color.White * 0.5f);
-                if (!_seekTrackBar.Dragging) _seekTrackBar.Value = (float)_soundtrack.CurrentTime.TotalSeconds;
+                if (this.Soundtrack.Muted) {
+                    spriteBatch.DrawOnCtrl(this, _texAudioMuted, _audioBtnBounds, _texAudioMuted.Bounds, Color.White * 0.5f);
+                }
+
+                if (!_seekTrackBar.Dragging) {
+                    _seekTrackBar.Value = (float)_soundtrack.CurrentTime.TotalSeconds;
+                }
 
                 // Draw duration
                 var durationBounds = new Rectangle(_seekTrackBar.Right - 100, _seekTrackBar.Top - 16, 100, bounds.Height);

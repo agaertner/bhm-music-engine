@@ -137,13 +137,8 @@ namespace Nekres.Music_Mixer.Core.Services {
 
         public void Upsert(MusicContextModel model)
         {
-            var entities = this.Search(x => x.Id.Equals(model.Id));
+            var entity = this.Search(x => x.Id.Equals(model.Id)).FirstOrDefault();
 
-            if (!entities.Any()) {
-                return;
-            }
-
-            var entity = entities.First();
             if (entity == null)
             {
                 entity = MusicContextEntity.FromModel(model);
