@@ -45,8 +45,6 @@ namespace Nekres.Music_Mixer.Core.Player {
 
         private TaskScheduler _scheduler;
 
-        private int GameVolume;
-
         public AudioEngine()
         {
             _scheduler = TaskScheduler.FromCurrentSynchronizationContext();
