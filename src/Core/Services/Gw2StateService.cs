@@ -1,14 +1,14 @@
 ﻿using Blish_HUD;
 using Blish_HUD.ArcDps;
 using Gw2Sharp.Models;
-using Nekres.Music_Mixer.Core.Player;
+using Nekres.Music_Mixer.Core.Services.Audio;
 using Stateless;
 using System;
 using Blish_HUD.Extended;
 using static Blish_HUD.GameService;
 namespace Nekres.Music_Mixer.Core.Services
 {
-    internal class Gw2StateService : IDisposable
+    public class Gw2StateService : IDisposable
     {
         public event EventHandler<ValueEventArgs<TyrianTime>> TyrianTimeChanged;
         public event EventHandler<ValueChangedEventArgs<State>> StateChanged;
@@ -44,7 +44,7 @@ namespace Nekres.Music_Mixer.Core.Services
 
         #region Public Fields
 
-        private TyrianTime _prevTyrianTime = TyrianTime.None;
+        private TyrianTime _prevTyrianTime = TyrianTime.NONE;
         public TyrianTime TyrianTime { 
             get => _prevTyrianTime;
             private set {

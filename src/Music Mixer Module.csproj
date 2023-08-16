@@ -62,7 +62,12 @@
   <ItemGroup>
     <Compile Include="..\submodules\bhud-extended\**\*.cs" Link="_Submodules\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Remove="..\submodules\**\AssemblyInfo.cs" />
-    <Compile Include="_Utils\AudioUtil.cs" />
+    <Compile Include="Core\Services\Audio\Source\SubmergedVolumeProvider.cs" />
+    <Compile Include="Core\Services\Data\AudioContext.cs" />
+    <Compile Include="Core\Services\Data\AudioContextLocation.cs" />
+    <Compile Include="Core\Services\Data\AudioContextMount.cs" />
+    <Compile Include="Core\Services\Data\DbEntity.cs" />
+    <Compile Include="Core\Utils\AudioUtil.cs" />
     <EmbeddedResource Include="..\submodules\bhud-extended\**\Resources\*.png" Link="_Submodules\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
@@ -162,61 +167,36 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\Player\API\Models\MetaData.cs" />
-    <Compile Include="Core\Player\AudioEngine.cs" />
-    <Compile Include="Core\Player\Source\DSP\BiQuad.cs" />
-    <Compile Include="Core\Player\Source\BiQuadFilterSource.cs" />
-    <Compile Include="Core\Player\Source\DSP\PeakFilter.cs" />
-    <Compile Include="Core\Player\Source\EndOfStreamProvider.cs" />
-    <Compile Include="Core\Player\Source\Equalizer\Equalizer.cs" />
-    <Compile Include="Core\Player\Source\Equalizer\EqualizerChannelFilter.cs" />
-    <Compile Include="Core\Player\Source\Equalizer\EqualizerFilter.cs" />
-    <Compile Include="Core\Player\Source\DSP\LowPassFilter.cs" />
+    <Compile Include="Core\Services\YtDlp\MetaData.cs" />
+    <Compile Include="Core\Services\AudioService.cs" />
+    <Compile Include="Core\Services\Audio\Source\DSP\BiQuad.cs" />
+    <Compile Include="Core\Services\Audio\Source\BiQuadFilterSource.cs" />
+    <Compile Include="Core\Services\Audio\Source\DSP\PeakFilter.cs" />
+    <Compile Include="Core\Services\Audio\Source\EndOfStreamProvider.cs" />
+    <Compile Include="Core\Services\Audio\Source\Equalizer\Equalizer.cs" />
+    <Compile Include="Core\Services\Audio\Source\Equalizer\EqualizerChannelFilter.cs" />
+    <Compile Include="Core\Services\Audio\Source\Equalizer\EqualizerFilter.cs" />
+    <Compile Include="Core\Services\Audio\Source\DSP\LowPassFilter.cs" />
     <Compile Include="Core\Services\MapService.cs" />
-    <Compile Include="Core\UI\Controls\AudioVolumeWidget.cs" />
-    <Compile Include="Core\UI\Controls\ClipboardButton.cs" />
-    <Compile Include="Core\UI\Controls\DayCycleSelect.cs" />
-    <Compile Include="Core\UI\Controls\DayCycleSwitcher.cs" />
-    <Compile Include="Core\UI\Controls\LoadingImage.cs" />
-    <Compile Include="Core\UI\Controls\MapThumb.cs" />
-    <Compile Include="Core\UI\Controls\RegionEntry.cs" />
-    <Compile Include="Core\UI\Controls\MapEntry.cs" />
-    <Compile Include="Core\Player\NTimer.cs" />
+    <Compile Include="Core\UI\DayCycleSelect.cs" />
+    <Compile Include="Core\UI\DayCycleSwitcher.cs" />
+    <Compile Include="Core\Utils\NTimer.cs" />
     <Compile Include="Core\Services\DataService.cs" />
     <Compile Include="Core\Services\Gw2StateService.cs" />
-    <Compile Include="Core\UI\Controls\MediaWidget.cs" />
-    <Compile Include="Core\UI\Controls\SkillButton.cs" />
-    <Compile Include="Core\UI\Controls\TrackBar2.cs" />
-    <Compile Include="Core\UI\Models\ConfigModel.cs" />
-    <Compile Include="Core\UI\Models\MainModel.cs" />
-    <Compile Include="Core\UI\Models\MusicContextModel.cs" />
-    <Compile Include="Core\UI\Presenters\ConfigPresenter.cs" />
-    <Compile Include="Core\UI\Presenters\LibraryPresenter.cs" />
-    <Compile Include="Core\UI\Presenters\MainPresenter.cs" />
-    <Compile Include="Core\UI\Views\ConfigContextView.cs" />
-    <Compile Include="Core\UI\Views\ContextView.cs" />
-    <Compile Include="Core\UI\Views\LibraryView.cs" />
-    <Compile Include="Core\UI\Views\MainView.cs" />
-    <Compile Include="Core\UI\Views\ConfigView.cs" />
-    <Compile Include="Core\UI\Views\ConfigMapSelectionView.cs" />
-    <Compile Include="Core\UI\Views\MapSelectionView.cs" />
-    <Compile Include="Core\UI\Views\MountView.cs" />
+    <Compile Include="Core\UI\TrackBarWithDraggingStopped.cs" />
     <Compile Include="MusicMixer.cs" />
-    <Compile Include="Core\Player\API\ffmpeg.cs" />
-    <Compile Include="Core\Player\API\youtube-dl.cs" />
-    <Compile Include="Core\Player\Soundtrack.cs" />
-    <Compile Include="Core\Services\Entities\MusicContextEntity.cs" />
-    <Compile Include="Core\UI\Controls\MusicContextDetails.cs" />
+    <Compile Include="Core\Services\YtDlpService.cs" />
+    <Compile Include="Core\Services\Audio\AudioTrack.cs" />
+    <Compile Include="Core\Services\Data\AudioSource.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="_Converters\TimeSpanFromSecondsConverter.cs" />
-    <Compile Include="_Extensions\Gw2StateExtensions.cs" />
-    <Compile Include="_Extensions\EnumerableExtensions.cs" />
-    <Compile Include="_Extensions\MapTypeExtensions.cs" />
-    <Compile Include="_Extensions\SpriteBatchExtensions.cs" />
-    <Compile Include="_Extensions\TimeSpanExtensions.cs" />
-    <Compile Include="_Extensions\TrackBarExtensions.cs" />
-    <Compile Include="_Extensions\WaveStreamExtensions.cs" />
-    <Compile Include="_Utils\FileUtil.cs" />
+    <Compile Include="Core\Converters\TimeSpanFromSecondsConverter.cs" />
+    <Compile Include="Core\Extensions\Gw2StateExtensions.cs" />
+    <Compile Include="Core\Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Core\Extensions\MapTypeExtensions.cs" />
+    <Compile Include="Core\Extensions\TimeSpanExtensions.cs" />
+    <Compile Include="Core\Extensions\TrackBarExtensions.cs" />
+    <Compile Include="Core\Extensions\WaveStreamExtensions.cs" />
+    <Compile Include="Core\Utils\FileUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
