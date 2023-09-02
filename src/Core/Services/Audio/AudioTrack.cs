@@ -5,16 +5,16 @@ using NAudio.Wave.SampleProviders;
 using Nekres.Music_Mixer.Core.Services.Audio.Source;
 using Nekres.Music_Mixer.Core.Services.Audio.Source.DSP;
 using Nekres.Music_Mixer.Core.Services.Audio.Source.Equalizer;
+using Nekres.Music_Mixer.Core.Services.Data;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using Nekres.Music_Mixer.Core.Services.Data;
 
 namespace Nekres.Music_Mixer.Core.Services.Audio {
     internal class AudioTrack : IDisposable {
 
-        public static   AudioTrack Empty = new();
-        public readonly bool       IsEmpty;
+        public static AudioTrack Empty = new();
+        public readonly bool IsEmpty;
 
         public event EventHandler<EventArgs> Finished;
 
@@ -76,44 +76,59 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             _equalizer = Equalizer.Create10BandEqualizer(_lowPassFilter);
         }
 
-        public static bool TryGetStream(AudioSource source, out AudioTrack soundTrack, int retries = 3, Logger logger = null)
+        public static async Task<AudioTrack> TryGetStream(AudioSource source, int retries = 3, int delayMs = 500, Logger logger = null)
         {
             if (string.IsNullOrWhiteSpace(source.AudioUrl)) {
-                soundTrack = AudioTrack.Empty;
-                return false;
+                return AudioTrack.Empty;
             }
 
             logger ??= Logger.GetLogger(typeof(AudioTrack));
             try {
-                soundTrack = new AudioTrack(source);
-                return true;
+                return new AudioTrack(source);
             } catch (Exception e) {
                 if (retries > 0) {
-                    logger.Warn(e, $"Failed to create audio output stream. Remaining retries: {retries}.");
-                    return TryGetStream(source, out soundTrack, --retries, logger);
+                    logger.Info(e, $"Failed to create audio output stream. Remaining retries: {retries}.");
+                    await Task.Delay(delayMs);
+                    return await TryGetStream(source, retries - 1, delayMs, logger);
                 }
 
                 switch (e) {
                     case InvalidCastException:
+                        logger.Warn(e, e.Message);
                         break;
                     case UnauthorizedAccessException:
+                        logger.Info(e, "Output device unavailable. Access denied.");
+                        break;
+                    case COMException when (uint)e.HResult == 0x88890008:
+                        logger.Warn(e, "Output device does not support shared mode.");
+                        break;
+                    case COMException when (uint)e.HResult == 0x80040154:
+                        logger.Warn(e, "Output device unsupported. Component class not registered.");
+                        break;
+                    case COMException when (uint)e.HResult == 0x80070490:
+                        logger.Warn(e, "Output device is not supported or was not found.");
+                        break;
+                    case COMException when (uint)e.HResult == 0x80070005:
+                        logger.Warn(e, "Output device unavailable. Access denied.");
+                        break;
+                    case COMException when (uint)e.HResult == 0x8889000A:
+                        logger.Warn(e, "Output device unavailable. Device is being used in exclusive mode.");
                         break;
                     case COMException:
+                        logger.Warn(e, $"Output device unavailable. HRESULT: {e.HResult}");
                         break;
-                    default: break;
+                    default:
+                        logger.Warn(e, e.Message);
+                        break;
                 }
-
-                logger.Warn(e, e.Message);
             }
-            soundTrack = AudioTrack.Empty;
-            return false;
+            return AudioTrack.Empty;
         }
 
-        public void Play(int fadeInDuration = 500, int retries = 3, Logger logger = null)
+        public async Task Play(int fadeInDuration = 500, int retries = 3, int delayMs = 500, Logger logger = null)
         {
             logger ??= Logger.GetLogger(typeof(AudioTrack));
             try {
-
                 if (!_initialized) {
                     _initialized = true;
                     _outputDevice.Init(_equalizer);
@@ -125,20 +140,25 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             } catch (Exception e) {
 
                 if (retries > 0) {
-                    Play(fadeInDuration, --retries, logger);
+                    await Task.Delay(delayMs);
+                    await Play(fadeInDuration, retries - 1, delayMs,logger);
+                    return;
                 }
 
                 switch (e) {
                     case InvalidCastException:
+                        logger.Warn(e, e.Message);
                         break;
                     case UnauthorizedAccessException:
+                        logger.Info(e, "Access to output device denied.");
                         break;
-                    case COMException:
+                    case COMException: // HRESULT: 0x80070005
+                        logger.Warn(e, $"Output device unavailable. HRESULT: {e.HResult}");
                         break;
-                    default: break;
+                    default:
+                        logger.Warn(e, e.Message);
+                        break;
                 }
-
-                logger.Warn(e, e.Message);
             }
         }
 

@@ -50,65 +50,53 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 return;
             }
 
-            this.Loading = true;
-
-            if (string.IsNullOrEmpty(source.AudioUrl))
-            {
-                if (string.IsNullOrEmpty(source.Uri)) {
-                    return;
-                }
-
-                MusicMixer.Instance.YtDlp.GetAudioOnlyUrl(source.Uri, AudioUrlReceived, source);
+            if (string.IsNullOrEmpty(source.PageUrl)) {
                 return;
             }
 
+            if (string.IsNullOrEmpty(source.AudioUrl)) {
+                source.AudioUrl = await MusicMixer.Instance.YtDlp.GetAudioOnlyUrl(source.PageUrl);
+                MusicMixer.Instance.Data.Upsert(source);
+            }
+            
             _currentSource = source;
-
             await TryPlay(source);
         }
 
-        private async Task AudioUrlReceived(string url, AudioSource source)
-        {
-            try
-            {
-                source.AudioUrl = url;
-                _currentSource = source;
-                MusicMixer.Instance.Data.Upsert(source);
-                await TryPlay(source);
-            } catch (Exception e) when (e is NullReferenceException or ObjectDisposedException) {
-                /* NOOP - Module was being unloaded. */
-            }
-        }
-
         private async Task<bool> TryPlay(AudioSource source, TimeSpan startTime = default) {
-            // Making sure WasApiOut is initialized in main synchronization context. Otherwise it will fail.
-            // https://github.com/naudio/NAudio/issues/425
-            return await Task.Factory.StartNew(async () => {
+            this.Loading = true;
 
-                if (!AudioTrack.TryGetStream(source, out var newTrack)) {
-                    this.Loading = false;
-                    return false;
-                }
+            try {
+                // Making sure WasApiOut is initialized in main synchronization context. Otherwise it will fail.
+                // https://github.com/naudio/NAudio/issues/425
+                return await Task.Factory.StartNew(async () => {
 
-                if (!this.AudioTrack.IsEmpty) {
-                    this.AudioTrack.Finished -= OnSoundtrackFinished;
-                    await this.AudioTrack.DisposeAsync();
-                }
+                    var track = await AudioTrack.TryGetStream(source);
+                    if (track.IsEmpty) {
+                        return false;
+                    }
 
-                if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
-                    AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 0.1f);
-                }
+                    if (!this.AudioTrack.IsEmpty) {
+                        this.AudioTrack.Finished -= OnSoundtrackFinished;
+                        await this.AudioTrack.DisposeAsync();
+                    }
 
-                this.AudioTrack          =  newTrack;
-                this.AudioTrack.Muted    =  this.Muted;
-                this.AudioTrack.Finished += OnSoundtrackFinished;
-                this.AudioTrack.Play();
+                    if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
+                        AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 0.1f);
+                    }
 
-                MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
+                    this.AudioTrack          =  track;
+                    this.AudioTrack.Muted    =  this.Muted;
+                    this.AudioTrack.Finished += OnSoundtrackFinished;
+                    await this.AudioTrack.Play();
 
+                    MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
+
+                    return true;
+                }, CancellationToken.None, TaskCreationOptions.None, _scheduler).Unwrap();
+            } finally {
                 this.Loading = false;
-                return true;
-            }, CancellationToken.None, TaskCreationOptions.None, _scheduler).Unwrap();
+            }
         }
 
         public void Stop()
@@ -118,32 +106,13 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             }
 
             this.AudioTrack?.Dispose();
+            this.AudioTrack = AudioTrack.Empty;
         }
 
         private async void OnSoundtrackFinished(object o, EventArgs e)
         {
             _currentSource = null;
-            if (this.Loading) {
-                return;
-            }
-
-            if (MusicMixer.Instance.Gw2State.CurrentState == Gw2StateService.State.Mounted) {
-
-                var mountType = (int)GameService.Gw2Mumble.PlayerCharacter.CurrentMount;
-                var dayCycle  = (int)MusicMixer.Instance.Gw2State.TyrianTime;
-
-                var context = MusicMixer.Instance.Data.GetContextMount(mountType, dayCycle);
-
-                await Play(context.GetRandom());
-                return;
-            }
-
-            if (MusicMixer.Instance.Gw2State.CurrentState == Gw2StateService.State.Ambient) {
-                var dayCycle = (int)MusicMixer.Instance.Gw2State.TyrianTime;
-                var context  = MusicMixer.Instance.Data.GetContextLocation(GameService.Gw2Mumble.CurrentMap.Id, dayCycle);
-
-                await Play(context.GetRandom());
-            }
+            await ChangeContext(MusicMixer.Instance.Gw2State.CurrentState);
         }
 
         public void Pause()
@@ -186,6 +155,11 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         public void Dispose() {
+            // Reset GW2 volume
+            if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
+                AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 1);
+            }
+
             this.AudioTrack?.Dispose();
 
             MusicMixer.Instance.Gw2State.IsSubmergedChanged -= OnIsSubmergedChanged;
@@ -193,7 +167,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         private void OnGw2LostFocus(object o, EventArgs e) {
-            if (!MusicMixer.Instance.MuteWhenInBackgroundSetting.Value) {
+            if (!MusicMixer.Instance.MuteWhenInBackground.Value) {
                 return;
             }
 
@@ -209,15 +183,14 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         private async void OnStateChanged(object o, ValueChangedEventArgs<Gw2StateService.State> e) {
+            if (e.NewValue == Gw2StateService.State.StandBy) {
+                Stop();
+            }
+
             switch (e.PreviousValue) {
                 case Gw2StateService.State.Mounted:
                 case Gw2StateService.State.Battle:
-                case Gw2StateService.State.Submerged:
-                case Gw2StateService.State.Victory:
-                    Stop();
-                    break;
-                case Gw2StateService.State.Ambient:
-                    SaveContext();
+                    Stop(); 
                     break;
             }
 
@@ -233,15 +206,29 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             var dayCycle = (int)MusicMixer.Instance.Gw2State.TyrianTime;
             switch (state) {
                 case Gw2StateService.State.Mounted:
-                    var mountType = (int)GameService.Gw2Mumble.PlayerCharacter.CurrentMount;
 
-                    var context = MusicMixer.Instance.Data.GetContextMount(mountType, dayCycle);
-                    await Play(context.GetRandom());
+                    if (!MusicMixer.Instance.Data.GetMountPlaylist(GameService.Gw2Mumble.PlayerCharacter.CurrentMount, out var context)) {
+                        return;
+                    }
+
+                    if (context.IsEmpty) {
+                        return;
+                    }
+
+                    await Play(context.GetRandom(dayCycle));
                     break;
-                case Gw2StateService.State.Ambient:
-                    var context2 = MusicMixer.Instance.Data.GetContextLocation(GameService.Gw2Mumble.CurrentMap.Id, dayCycle);
-                    await Play(context2.GetRandom());
+                case Gw2StateService.State.Defeated:
+                    if (!MusicMixer.Instance.Data.GetDefeatedPlaylist(out var context2)) {
+                        return;
+                    }
+
+                    if (context2.IsEmpty) {
+                        return;
+                    }
+
+                    await Play(context2.GetRandom(dayCycle));
                     break;
+                default: break;
             }
         }
 

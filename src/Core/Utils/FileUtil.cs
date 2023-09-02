@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading.Tasks;
@@ -60,23 +61,18 @@ namespace Nekres.Music_Mixer
         /// <returns><see langword="True"/> if file is locked or does not exist. Otherwise <see langword="false"/>.</returns>
         public static bool IsFileLocked(string uri)
         {
-            try
-            {
-                using (FileStream stream = File.Open(uri, FileMode.Open, FileAccess.Read, FileShare.None))
-                {
-                    stream.Close();
-                }
-            }
-            catch (IOException)
-            {
-                //the file is unavailable because it is:
-                //still being written to
-                //or being processed by another thread
-                //or does not exist (has already been processed)
+            FileStream stream = null;
+            try {
+                stream = File.Open(uri, FileMode.Open, FileAccess.Read, FileShare.None); 
+                // ERROR_SHARING_VIOLATION
+            } catch (IOException e) when ((e.HResult & 0x0000FFFF) == 32) {
                 return true;
+                // ERROR_LOCK_VIOLATION
+            } catch (IOException e) when ((e.HResult & 0x0000FFFF) == 33) {
+                return true;
+            } finally {
+                stream?.Close();
             }
-
-            //file is not locked
             return false;
         }
 
@@ -152,16 +148,18 @@ namespace Nekres.Music_Mixer
         /// http://wyupdate.googlecode.com/svn-history/r401/trunk/frmFilesInUse.cs (no copyright in code at time of viewing)
         /// 
         /// </remarks>
-        public static List<Process> WhoIsLocking(string path)
+        public static IEnumerable<Process> WhoIsLocking(string path)
         {
             uint handle;
             string key = Guid.NewGuid().ToString();
-            List<Process> processes = new List<Process>();
+            var processes = new List<Process>();
 
             int res = RmStartSession(out handle, 0, key);
 
-            if (res != 0)
-                throw new Exception("Could not begin restart session.  Unable to determine file locker.");
+            if (res != 0) {
+                // Could not begin restart session. Unable to determine file locker.
+                return Enumerable.Empty<Process>();
+            }
 
             try
             {
@@ -174,16 +172,16 @@ namespace Nekres.Music_Mixer
 
                 res = RmRegisterResources(handle, (uint)resources.Length, resources, 0, null, 0, null);
 
-                if (res != 0) 
-                    throw new Exception("Could not register resource.");                                    
+                if (res != 0) {
+                    return Enumerable.Empty<Process>();
+                }
 
                 //Note: there's a race condition here -- the first call to RmGetList() returns
                 //      the total number of process. However, when we call RmGetList() again to get
                 //      the actual processes this number may have increased.
                 res = RmGetList(handle, out pnProcInfoNeeded, ref pnProcInfo, null, ref lpdwRebootReasons);
 
-                if (res == ERROR_MORE_DATA)
-                {
+                if (res == ERROR_MORE_DATA) {
                     // Create an array to store the process results
                     RM_PROCESS_INFO[] processInfo = new RM_PROCESS_INFO[pnProcInfoNeeded];
                     pnProcInfo = pnProcInfoNeeded;
@@ -207,11 +205,11 @@ namespace Nekres.Music_Mixer
                             catch (ArgumentException) { }
                         }
                     }
-                    //else
-                        //throw new Exception("Could not list processes locking resource.");                    
                 }
-                else if (res != 0)
-                    throw new Exception("Could not list processes locking resource. Failed to get size of result.");                    
+                else if (res != 0) {
+                    // Could not list processes locking resource. Failed to get size of result.
+                    return Enumerable.Empty<Process>();
+                }
             }
             finally
             {

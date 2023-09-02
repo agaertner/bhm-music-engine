@@ -1,9 +1,11 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Blish_HUD;
 using Gapotchenko.FX.Diagnostics;
 using Nekres.Music_Mixer.Core.Services.YtDlp;
 
@@ -28,13 +30,22 @@ namespace Nekres.Music_Mixer.Core.Services {
             B320
         }
 
-        private readonly Regex _youtubeVideoId = new(@"youtu(?:\.be|be\.com)/(?:.*v(?:/|=)|(?:.*/)?)(?<id>[a-zA-Z0-9-_]+)", RegexOptions.Compiled);
+        private readonly Regex _mediaId        = new("^([a-zA-Z0-9_-]+)$", RegexOptions.Compiled);
+        private readonly Regex _youtubeVideoId = new(@"youtu(?:\.be|be\.com)/(?:.*v(?:/|=)|(?:.*/)?)(?<id>[a-zA-Z0-9-_]+).*", RegexOptions.Compiled);
         private readonly Regex _progressReport = new(@"^\[download\].*?(?<percentage>(.*?))% of (?<size>(.*?))MiB at (?<speed>(.*?)) ETA (?<eta>(.*?))$", RegexOptions.Compiled); //[download]   2.7% of 4.62MiB at 200.00KiB/s ETA 00:23
-        private readonly Regex _upToDate = new(@"^yt-dlp is up to date \((?<version>.*?)\)$", RegexOptions.Compiled);
-        private readonly Regex _updating = new(@"^Updating to (?<version>.*?) \.\.\.$", RegexOptions.Compiled);
-        private readonly Regex _updated = new("^Updated yt-dlp to (?<version>.*?)$", RegexOptions.Compiled);
+        private readonly Regex _upToDate       = new(@"^yt-dlp is up to date \((?<version>.*?)\)$", RegexOptions.Compiled);
+        private readonly Regex _updating       = new(@"^Updating to (?<version>.*?) \.\.\.$", RegexOptions.Compiled);
+        private readonly Regex _updated        = new("^Updated yt-dlp to (?<version>.*?)$", RegexOptions.Compiled);
+        private readonly Regex _version        = new(@"^Available version: (?<available>.*?), Current version: (?<current>.*?)$", RegexOptions.Compiled);
+        private readonly Regex _warning        = new(@"^WARNING:[^\S\r\n](.*?)$", RegexOptions.Compiled);
+        private readonly Regex _error          = new(@"^ERROR:[^\S\r\n](.*?)$", RegexOptions.Compiled);
 
         private string _executablePath;
+
+        private Logger _logger = Logger.GetLogger(typeof(YtDlpService));
+
+        private const string _globalYtDlpArgs = "--ignore-config --no-call-home --no-warnings --no-get-comments --extractor-retries 0 "
+                                              + "--extractor-args \"youtube:max_comments=0;player_client=web,web_music;skip=configs,webpage\"";
 
         public YtDlpService() {
             ExtractFile("bin/yt-dlp.exe");
@@ -53,57 +64,93 @@ namespace Nekres.Music_Mixer.Core.Services {
             File.WriteAllBytes(_executablePath, buffer);
         }
 
-        public async Task Update(IProgress<string> progressHandler) {
+        public bool GetYouTubeVideoId(string url, out string id) {
+            var match = _youtubeVideoId.Match(url);
+            if (match.Success && match.Groups["id"].Success) {
+                id = match.Groups["id"].Value;
+                return true;
+            }
+            id = string.Empty;
+            return false;
+        }
 
-            var result = string.Empty;
+        public void RemoveCache() {
+            var p = new Process {
+                StartInfo =
+                {
+                    CreateNoWindow         = true,
+                    FileName               = _executablePath,
+                    Arguments              = $"--rm-cache-dir {_globalYtDlpArgs}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError  = true,
+                    UseShellExecute        = false,
+                }
+            };
+            p.ErrorDataReceived += (_, e) => {
+                if (string.IsNullOrWhiteSpace(e.Data)) {
+                    return;
+                }
+                _logger.Info(e.Data);
+            };
+            p.Start();
+            p.BeginErrorReadLine();
+        }
+
+        public async Task Update(IProgress<string> progressHandler) {
 
             var p = new Process
             {
                 StartInfo =
                 {
-                    CreateNoWindow = true,
-                    FileName = _executablePath,
-                    Arguments = "-U",
+                    CreateNoWindow         = true,
+                    FileName               = _executablePath,
+                    Arguments              = $"-U {_globalYtDlpArgs}",
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
+                    RedirectStandardError  = true,
+                    UseShellExecute        = false,
                 }
             };
             p.OutputDataReceived += (_, e) =>
             {
-                if (string.IsNullOrEmpty(e.Data)) {
+                if (string.IsNullOrWhiteSpace(e.Data)) {
                     return;
                 }
 
-                var version = string.Empty;
+                // Identify yt-dlp versions
+                var versionCheck = _version.Match(e.Data);
+                if (versionCheck.Success) {
 
-                var isUpdating = _updating.Match(e.Data);
+                    var current   = versionCheck.Groups["current"].Value;
+                    var available = versionCheck.Groups["available"].Value;
 
-                if (isUpdating.Success) {
-                    progressHandler.Report("YT-DLP is updating…");
+                    _logger.Info($"Current version \"{current}\"");
+
+                    if (!string.Equals(available,current)) {
+                        _logger.Info($"Available version \"{available}\"");
+                    }
                 }
 
-                // Check if yt-dlp is up to date
-                var isUpToDate = _upToDate.Match(e.Data);
-                if (isUpToDate.Success) {
-                    version = isUpToDate.Groups["version"].Value;
-                    progressHandler.Report(null);
+                // Check if yt-dlp is updating
+                var isUpdating = _updating.Match(e.Data);
+                if (isUpdating.Success) {
+                    var version = isUpdating.Groups["version"].Value;
+                    progressHandler.Report($"Updating yt-dlp to \"{version}\"…");
                 }
 
                 // Check if yt-dlp has updated
                 var hasUpdated = _updated.Match(e.Data);
                 if (hasUpdated.Success) {
-                    version = hasUpdated.Groups["version"].Value;
+                    var version = hasUpdated.Groups["version"].Value;
                     progressHandler.Report(null);
-                }
 
-                result = version;
+                    _logger.Info($"Updated to \"{version}\"");
+                }
             };
             p.ErrorDataReceived += (_, e) => {
-                if (string.IsNullOrEmpty(e.Data)) {
+                if (string.IsNullOrWhiteSpace(e.Data)) {
                     return;
                 }
-                result = e.Data;
+                _logger.Info(e.Data);
             };
 
             p.Start();
@@ -122,7 +169,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     FileName = _executablePath,
-                    Arguments = $"--get-thumbnail {link}"
+                    Arguments = $"--get-thumbnail {link} {_globalYtDlpArgs}"
                 }
             };
             p.OutputDataReceived += (_, e) => callback(e.Data);
@@ -130,23 +177,7 @@ namespace Nekres.Music_Mixer.Core.Services {
             p.BeginOutputReadLine();
         }
 
-        public async Task<bool> IsUrlSupported(string link)
-        {
-            using var p = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    FileName = _executablePath,
-                    Arguments = $"--dump-json {link}" // Url is supported if we get any results.
-                }
-            };
-            p.Start();
-            return await p.WaitForExitAsync().ContinueWith(t => !t.IsFaulted && p.ExitCode == 0);
-        }
-
-        public void GetAudioOnlyUrl<TModel>(string link, Func<string, TModel, Task> callback, TModel model = default)
+        public async Task<string> GetAudioOnlyUrl(string link)
         {
             using var p = new Process
             {
@@ -156,46 +187,91 @@ namespace Nekres.Music_Mixer.Core.Services {
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     FileName = _executablePath,
-                    Arguments = string.Format("-g {0} -f \"bestaudio[ext=m4a][abr<={1}]/bestaudio[ext=aac][abr<={1}]/bestaudio[abr<={1}]/bestaudio\"", 
+                    Arguments = string.Format("-g {0} -f \"bestaudio[ext=m4a][abr<={1}]/bestaudio[ext=aac][abr<={1}]/bestaudio[abr<={1}]/bestaudio\" {2}", 
                                               link, 
-                                              MusicMixer.Instance.AverageBitrateSetting.Value.ToString().Substring(1))
+                                              MusicMixer.Instance.AverageBitrate.Value.ToString().Substring(1), 
+                                              _globalYtDlpArgs)
                 }
             };
-            p.OutputDataReceived += async (_, e) =>
+            var result = string.Empty;
+            p.OutputDataReceived += (_, e) =>
             {
                 if (string.IsNullOrEmpty(e.Data) || e.Data.ToLower().StartsWith("error")) {
                     return;
                 }
-
-                await callback(e.Data, model);
+                result = e.Data;
             };
             p.Start();
             p.BeginOutputReadLine();
+            await p.WaitForExitAsync();
+            return result;
         }
 
-        public void GetMetaData(string link, Action<MetaData> callback)
+        public async Task<MetaData> GetMetaData(string link)
         {
             using var p = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    CreateNoWindow = true,
+                    CreateNoWindow         = true,
                     RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    FileName = _executablePath,
-                    Arguments = $"--dump-json {link}"
+                    RedirectStandardError  = true,
+                    UseShellExecute        = false,
+                    FileName               = _executablePath,
+                    Arguments              = $"--print id,webpage_url,title,uploader,duration {link} {_globalYtDlpArgs}" // Url is supported if we get any results.
                 }
             };
+
+            var metaData = new MetaData();
+
+            int i = 0;
             p.OutputDataReceived += (_, e) =>
             {
                 if (string.IsNullOrEmpty(e.Data)) {
                     return;
                 }
 
-                callback(JsonConvert.DeserializeObject<MetaData>(e.Data));
+                switch (i) {
+                    case 0:
+                        var id = _mediaId.Match(e.Data);
+                        if (!id.Success) {
+                            return;
+                        }
+                        metaData.Id = e.Data;
+                        break;
+                    case 1:
+                        metaData.Url = e.Data;
+                        break;
+                    case 2:
+                        metaData.Title = e.Data;
+                        break;
+                    case 3:
+                        metaData.Uploader = e.Data;
+                        break;
+                    case 4:
+                        metaData.Duration = TimeSpan.FromSeconds(int.Parse(Regex.Replace(e.Data, "[^0-9]", string.Empty)));
+                        break;
+                    default: break;
+                }
+                ++i;
             };
+
+            p.ErrorDataReceived += (_, e) => {
+                if (string.IsNullOrEmpty(e.Data)) {
+                    return;
+                }
+                var error = _error.Match(e.Data);
+                if (error.Success) {
+                    metaData = MetaData.Empty;
+                    _logger.Info($"{error.Groups[1].Value}");
+                }
+            };
+
             p.Start();
             p.BeginOutputReadLine();
+            p.BeginErrorReadLine();
+            await p.WaitForExitAsync();
+            return metaData;
         }
 
         /*

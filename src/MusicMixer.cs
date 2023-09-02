@@ -8,9 +8,13 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Nekres.Music_Mixer.Core.Services;
 using Nekres.Music_Mixer.Core.Services.Audio;
+using Nekres.Music_Mixer.Core.UI.Playlists;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
+using Nekres.Music_Mixer.Core.Services.Data;
+using Nekres.Music_Mixer.Core.UI.Library;
 
 namespace Nekres.Music_Mixer {
 
@@ -29,14 +33,14 @@ namespace Nekres.Music_Mixer {
 
         #endregion
 
-        internal SettingEntry<float>                     MasterVolumeSetting;
-        internal SettingEntry<bool>                      ToggleMountedPlaylistSetting;
-        internal SettingEntry<bool>                      ToggleFourDayCycleSetting;
-        internal SettingEntry<YtDlpService.AudioBitrate> AverageBitrateSetting;
-        internal SettingEntry<bool>                      MuteWhenInBackgroundSetting;
+        internal SettingEntry<float>                     MasterVolume;
+        internal SettingEntry<bool>                      ToggleMountedPlaylist;
+        internal SettingEntry<YtDlpService.AudioBitrate> AverageBitrate;
+        internal SettingEntry<bool>                      MuteWhenInBackground;
 
         public string ModuleDirectory { get; private set; }
 
+        internal ResourceService Resources;
         internal YtDlpService    YtDlp;
         internal AudioService    Audio;
         internal DataService     Data;
@@ -47,27 +51,25 @@ namespace Nekres.Music_Mixer {
 
         // Textures
         private Texture2D _cornerTexture;
+        private Texture2D _mountTabIcon;
+        private Texture2D _defeatedIcon;
 
         [ImportingConstructor]
         public MusicMixer([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters) { Instance = this; }
 
         protected override void DefineSettings(SettingCollection settings) {
-            MasterVolumeSetting = settings.DefineSetting("master_volume", 50f, 
+            MasterVolume = settings.DefineSetting("master_volume", 50f, 
                 () => "Master Volume", 
                 () => "Sets the audio volume.");
 
-            MuteWhenInBackgroundSetting = settings.DefineSetting("mute_in_background", false,
+            MuteWhenInBackground = settings.DefineSetting("mute_in_background", false,
                 () => "Mute when GW2 is in the background");
 
-            ToggleMountedPlaylistSetting = settings.DefineSetting("enable_mounted_playlist", true, 
+            ToggleMountedPlaylist = settings.DefineSetting("enable_mounted_playlist", true, 
                 () => "Use mounted playlist", 
                 () => "Whether songs of the mounted playlist should be played while mounted.");
-            
-            ToggleFourDayCycleSetting = settings.DefineSetting("enable_four_day_cycle", false, 
-                () => "Use dusk and dawn day cycles", 
-                () => "Whether dusk and dawn track attributes should be interpreted as unique day cycles.\nOtherwise dusk and dawn will be interpreted as night and day respectively.");
-            
-            AverageBitrateSetting = settings.DefineSetting("average_bitrate", YtDlpService.AudioBitrate.B320, 
+
+            AverageBitrate = settings.DefineSetting("average_bitrate", YtDlpService.AudioBitrate.B320, 
                 () => "Average bitrate limit", 
                 () => "Sets the average bitrate of the audio used in streaming.");
         }
@@ -76,10 +78,11 @@ namespace Nekres.Music_Mixer {
         {
             ModuleDirectory = DirectoriesManager.GetFullDirectoryPath("music_mixer");
 
-            YtDlp    = new YtDlpService();
-            Data     = new DataService();
-            Gw2State = new Gw2StateService();
-            Audio    = new AudioService();
+            Resources       = new ResourceService();
+            YtDlp           = new YtDlpService();
+            Data            = new DataService();
+            Gw2State        = new Gw2StateService();
+            Audio           = new AudioService();
         }
 
         protected override void Update(GameTime gameTime) {
@@ -100,34 +103,69 @@ namespace Nekres.Music_Mixer {
 
         protected override async Task LoadAsync() {
             await YtDlp.Update(GetModuleProgressHandler());
+            await Gw2State.SetupLockedAudioFileHack();
         }
 
         protected override void OnModuleLoaded(EventArgs e) {
-            MasterVolumeSetting.Value = MathHelper.Clamp(MasterVolumeSetting.Value, 0f, 100f);
+
+            AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+
+            // Clearing expired download urls..
+            YtDlp.RemoveCache();    // ..from cache.
+            Data.RemoveAudioUrls(); // ..from database.
+
+            MasterVolume.Value = MathHelper.Clamp(MasterVolume.Value, 0f, 100f);
 
             _cornerTexture = ContentsManager.GetTexture("corner_icon.png");
             var windowRegion = new Rectangle(40, 26, 913, 691);
             _moduleWindow = new TabbedWindow2(GameService.Content.DatAssetCache.GetTextureFromAssetId(155985),
                                               windowRegion,
-                                              new Rectangle(70, 71, 839, 605)) {
+                                              new Rectangle(100, 36, 839, 605)) {
                 Parent        = GameService.Graphics.SpriteScreen,
                 Title         = "Background Music",
                 Emblem        = _cornerTexture,
-                Subtitle      = this.Name,
+                Subtitle      = "Mounted",
                 SavesPosition = true,
                 Id            = $"{nameof(MusicMixer)}_d42b52ce-74f1-4e6d-ae6b-a8724029f0a3",
                 Left          = (GameService.Graphics.SpriteScreen.Width  - windowRegion.Width) / 2,
                 Top           = (GameService.Graphics.SpriteScreen.Height - windowRegion.Height)  / 2
             };
-            
+
+            _mountTabIcon = ContentsManager.GetTexture("tabs/raptor.png");
+            var mountTab = new Tab(_mountTabIcon, () => new MountPlaylistsView(), "Mounted");
+            _moduleWindow.Tabs.Add(mountTab);
+
+            _defeatedIcon = ContentsManager.GetTexture("tabs/downed_enemy.png");
+            var defeatedTab = new Tab(_defeatedIcon, () => {
+                if (!Data.GetDefeatedPlaylist(out var context)) {
+                    context = new Playlist {
+                        ExternalId = "Defeated",
+                        Tracks     = new List<AudioSource>()
+                    };
+                }
+
+                return new BgmLibraryView(context, "Defeated");
+            }, "Defeated");
+            _moduleWindow.Tabs.Add(defeatedTab);
+
             _cornerIcon = new CornerIcon
             {
                 Icon = _cornerTexture
             };
             _cornerIcon.LeftMouseButtonReleased += OnModuleIconClick;
 
+            _moduleWindow.TabChanged += OnTabChanged;
+
             // Base handler must be called
             base.OnModuleLoaded(e);
+        }
+
+        private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e) {
+            Audio?.Dispose();
+        }
+
+        private void OnTabChanged(object sender, ValueChangedEventArgs<Tab> e) {
+            _moduleWindow.Subtitle = e.NewValue.Name;
         }
 
         public void OnModuleIconClick(object o, MouseEventArgs e)
@@ -149,13 +187,13 @@ namespace Nekres.Music_Mixer {
             Audio?.Dispose();
             Gw2State?.Dispose();
             Data?.Dispose();
+            Resources?.Dispose();
 
             _cornerTexture?.Dispose();
+            _defeatedIcon?.Dispose();
+            _mountTabIcon?.Dispose();
 
-            // Reset GW2 volume
-            if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
-                AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 1);
-            }
+            AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
 
             // All static members must be manually unset
             Instance = null;

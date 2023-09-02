@@ -10,6 +10,7 @@ using System.IO;
 using System.Net;
 using System.Threading;
 using Image = SixLabors.ImageSharp.Image;
+using MountType = Gw2Sharp.Models.MountType;
 
 namespace Nekres.Music_Mixer.Core.Services {
     internal class DataService : IDisposable
@@ -20,9 +21,16 @@ namespace Nekres.Music_Mixer.Core.Services {
         private          ManualResetEvent     _lockReleased = new(false);
         private          bool                 _lockAcquired = false;
 
+        private const  string TBL_PLAYLISTS        = "playlists";
+        public const  string TBL_AUDIO_SOURCES    = "audio_sources";
+        private const string TBL_THUMBNAILS       = "thumbnails";
+        private const string TBL_THUMBNAIL_CHUNKS = "thumbnail_chunks";
+
+        private const string LITEDB_FILENAME = "music.db";
+
         public DataService() {
             _connectionString = new ConnectionString {
-                Filename   = Path.Combine(MusicMixer.Instance.ModuleDirectory, "music.db"),
+                Filename   = Path.Combine(MusicMixer.Instance.ModuleDirectory, LITEDB_FILENAME),
                 Connection = ConnectionType.Shared
             };
         }
@@ -34,8 +42,8 @@ namespace Nekres.Music_Mixer.Core.Services {
             try {
                 using var db = new LiteDatabase(_connectionString);
 
-                var thumbnails = db.GetStorage<string>("thumbnails", "thumbnail_chunks");
-                stream = thumbnails.OpenRead(source.Uri);
+                var thumbnails = db.GetStorage<string>(TBL_THUMBNAILS, TBL_THUMBNAIL_CHUNKS);
+                stream = thumbnails.OpenRead(source.PageUrl);
 
             } catch (Exception e) {
 
@@ -45,51 +53,61 @@ namespace Nekres.Music_Mixer.Core.Services {
                 this.ReleaseWriteLock();
             }
 
+            var texture = new AsyncTexture2D();
+
             if (stream == null) {
                 // Thumbnail not cached, request it.
-                var texture = new AsyncTexture2D();
-                MusicMixer.Instance.YtDlp.GetThumbnail(source.Uri, thumbnailUri => ThumbnailUrlReceived(source.Uri, thumbnailUri, texture));
+                MusicMixer.Instance.YtDlp.GetThumbnail(source.PageUrl, thumbnailUri => ThumbnailUrlReceived(source.PageUrl, thumbnailUri, texture));
                 return texture;
             }
 
             try {
                 using var gdx = GameService.Graphics.LendGraphicsDeviceContext();
-                return Texture2D.FromStream(gdx.GraphicsDevice, stream);
+                texture.SwapTexture(Texture2D.FromStream(gdx.GraphicsDevice, stream));
+                return texture;
             } catch (InvalidOperationException e) {
                 // Unsupported image format.
                 MusicMixer.Logger.Info(e,e.Message);
             }
-            return ContentService.Textures.TransparentPixel;
+            return texture;
         }
 
-        public AudioContextLocation GetContextLocation(int mapId, int dayCycle) {
+        public bool GetTrackByMediaId(string mediaId, out AudioSource source) {
             this.AcquireWriteLock();
             try {
                 using var db = new LiteDatabase(_connectionString);
 
-                var collection = db.GetCollection<AudioContextLocation>("audio_sources");
-                return collection.Include(x => x.AudioSources)
-                                 .FindOne(x => 
-                                              x.MapId    == mapId &&
-                                              x.DayCycle == dayCycle);
+                var collection = db.GetCollection<AudioSource>(TBL_AUDIO_SOURCES);
+                source = collection.FindOne(x => x.ExternalId.Equals(mediaId));
+                return source != null;
             } finally {
                 this.ReleaseWriteLock();
             }
         }
 
-        public AudioContextMount GetContextMount(int mountType, int dayCycle) {
+        private bool GetPlaylist(string externalId, out Playlist playlist) {
             this.AcquireWriteLock();
             try {
                 using var db = new LiteDatabase(_connectionString);
 
-                var collection = db.GetCollection<AudioContextMount>("audio_sources");
-                return collection.Include(x => x.AudioSources)
-                                 .FindOne(x => 
-                                              x.MountType == mountType &&
-                                              x.DayCycle  == dayCycle);
+                var collection = db.GetCollection<Playlist>(TBL_PLAYLISTS);
+                playlist = collection.Include(x => x.Tracks).FindOne(x => x.ExternalId == externalId);
+                return playlist != null;
             } finally {
                 this.ReleaseWriteLock();
             }
+        }
+
+        public bool GetMountPlaylist(MountType mountType, out Playlist playlist) {
+            return GetPlaylist(mountType.ToString(), out playlist);
+        }
+
+        public bool GetDefeatedPlaylist(out Playlist context) {
+            return GetPlaylist("Defeated", out context);
+        }
+
+        public bool GetMapPlaylist(int mapId, out Playlist playlist) {
+            return GetPlaylist(mapId.ToString(), out playlist);
         }
 
         public bool Remove(AudioSource model) {
@@ -97,45 +115,81 @@ namespace Nekres.Music_Mixer.Core.Services {
             try {
                 using var db = new LiteDatabase(_connectionString);
 
-                var collection = db.GetCollection<AudioSource>("audio_sources");
+                var collection = db.GetCollection<AudioSource>(TBL_AUDIO_SOURCES);
                 return collection.Delete(model.Id);
             } finally {
                 this.ReleaseWriteLock();
             }
         }
 
-        public void Upsert(AudioSource model)
+        public bool RemoveAudioUrls() {
+            this.AcquireWriteLock();
+            try {
+                using var db = new LiteDatabase(_connectionString);
+
+                var collection = db.GetCollection<AudioSource>(TBL_AUDIO_SOURCES);
+
+                return collection.Count() == collection.UpdateMany(src => new AudioSource {
+                    Id         = src.Id,
+                    ExternalId = src.ExternalId,
+                    PageUrl    = src.PageUrl,
+                    Title      = src.Title,
+                    Uploader   = src.Uploader,
+                    Duration   = src.Duration,
+                    Volume     = src.Volume,
+                    DayCycles  = src.DayCycles,
+                    AudioUrl   = string.Empty
+                }, src => true);
+            } finally {
+                this.ReleaseWriteLock();
+            }
+        }
+
+        public bool Upsert(AudioSource model)
         {
             this.AcquireWriteLock();
+
             try {
                 using var db = new LiteDatabase(_connectionString);
 
-                var collection = db.GetCollection<AudioSource>("audio_sources");
-                collection.Upsert(model);
+                var collection = db.GetCollection<AudioSource>(TBL_AUDIO_SOURCES);
+                collection.Upsert(model); // Returns true on insertion and false on update.
+                return true;
+            } catch (Exception e) {
+                MusicMixer.Logger.Warn(e, e.Message);
+                return false;
             } finally {
                 this.ReleaseWriteLock();
             }
         }
 
-        public void Upsert(AudioContextLocation model) {
+        public bool Upsert(Playlist model) {
             this.AcquireWriteLock();
             try {
                 using var db = new LiteDatabase(_connectionString);
 
-                var collection = db.GetCollection<AudioContextLocation>("context_locations");
+                var collection = db.GetCollection<Playlist>(TBL_PLAYLISTS);
                 collection.Upsert(model);
+                return true;
+            } catch (Exception e) {
+                MusicMixer.Logger.Warn(e, e.Message);
+                return false;
             } finally {
                 this.ReleaseWriteLock();
             }
         }
 
-        public void Upsert(AudioContextMount model) {
+        public bool Upsert(Playlist model, string table) {
             this.AcquireWriteLock();
             try {
                 using var db = new LiteDatabase(_connectionString);
 
-                var collection = db.GetCollection<AudioContextMount>("context_mounts");
+                var collection = db.GetCollection<Playlist>(table);
                 collection.Upsert(model);
+                return true;
+            } catch (Exception e) {
+                MusicMixer.Logger.Warn(e, e.Message);
+                return false;
             } finally {
                 this.ReleaseWriteLock();
             }
@@ -194,7 +248,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                     try {
                         using var db = new LiteDatabase(_connectionString);
 
-                        var thumbnails = db.GetStorage<string>("thumbnails", "thumbnail_chunks");
+                        var thumbnails = db.GetStorage<string>(TBL_THUMBNAILS, TBL_THUMBNAIL_CHUNKS);
                         thumbnails.Upload(id, url, ms);
                     } finally {
                         this.ReleaseWriteLock();

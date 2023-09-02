@@ -18,7 +18,7 @@ namespace Nekres.Music_Mixer {
         }
 
         public static float GetNormalizedVolume(float volume) {
-            var masterVolume = MathHelper.Clamp(MusicMixer.Instance.MasterVolumeSetting.Value / 1000f, 0f, 1f);
+            var masterVolume = MathHelper.Clamp(MusicMixer.Instance.MasterVolume.Value / 1000f, 0f, 1f);
             if (volume >= masterVolume) {
                 return masterVolume;
             }
@@ -92,13 +92,16 @@ namespace Nekres.Music_Mixer {
                 try {
                     sessionEnumerator = device.AudioSessionManager.Sessions;
                 } catch (COMException ex) when ((uint)ex.HResult == 0x88890008) {
-                    // Skip this audio device.  Something about it is unsupported.
+                    // Skip this audio device. Something about it is unsupported.
                     continue;
                 } catch (COMException ex) when ((uint)ex.HResult == 0x80040154) {
-                    // Skip this audio device.  Something about it is unsupported.
+                    // Skip this audio device. Something about it is unsupported.
                     continue;
                 } catch (COMException ex) when ((uint)ex.HResult == 0x80070490) {
-                    // Skip this audio device.  Something about it is unsupported.
+                    // Skip this audio device. Something about it is unsupported.
+                    continue;
+                } catch (COMException ex) when ((uint)ex.HResult == 0x80070005) {
+                    // Skip this audio device. Something about it is unsupported.
                     continue;
                 } catch (Exception) {
                     continue;
