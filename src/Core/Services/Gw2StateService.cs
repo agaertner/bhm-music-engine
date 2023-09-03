@@ -3,8 +3,8 @@ using Blish_HUD.Extended;
 using Gw2Sharp.Models;
 using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
-using static Blish_HUD.GameService;
 namespace Nekres.Music_Mixer.Core.Services {
     public class Gw2StateService : IDisposable
     {
@@ -36,7 +36,7 @@ namespace Nekres.Music_Mixer.Core.Services {
             }
         }
 
-        private bool _prevIsSubmerged = Gw2Mumble.PlayerCamera.Position.Z <= 0; // for character pos: < -1.25f;
+        private bool _prevIsSubmerged = GameService.Gw2Mumble.PlayerCamera.Position.Z <= 0; // for character pos: < -1.25f;
         public bool IsSubmerged {
             get => _prevIsSubmerged; 
             private set {
@@ -67,7 +67,7 @@ namespace Nekres.Music_Mixer.Core.Services {
         private readonly NTimer _outOfCombatTimer;
         private readonly NTimer _outOfCombatTimerLong;
 
-        private string   _defeatedLockFile  = Path.Combine(DirectoryUtil.MusicPath, "Defeated.wav");
+        private string   _lockFile          = "silence.wav";
         private DateTime _lastLockFileCheck = DateTime.UtcNow.AddSeconds(10);
         public Gw2StateService() {
 
@@ -81,16 +81,16 @@ namespace Nekres.Music_Mixer.Core.Services {
         }
 
         public async Task SetupLockedAudioFileHack() {
-            await SetupLockFiles(_defeatedLockFile);
+            await SetupLockFiles(State.Defeated);
         }
 
-        private async Task SetupLockFiles(string lockFile) {
-            await MusicMixer.Instance.ContentsManager.Extract("audio/silence.wav", lockFile, false);
+        private async Task SetupLockFiles(State state) {
+            var relLockFilePath = $"{state}\\{_lockFile}";
+            await MusicMixer.Instance.ContentsManager.Extract($"audio/{_lockFile}", Path.Combine(DirectoryUtil.MusicPath, relLockFilePath), false);
             try {
-                using var file = File.Create(Path.Combine(DirectoryUtil.MusicPath, $"{Path.GetFileNameWithoutExtension(lockFile)}.m3u"));
+                using var file = File.Create(Path.Combine(DirectoryUtil.MusicPath, $"{state}.m3u"));
                 file.Position = 0;
-                var name    = Path.GetFileName(lockFile);
-                var content = $"#EXTM3U\r\n#EXTINF:5,{name}\r\n{name}\r\n".GetBytes();
+                var content = Encoding.UTF8.GetBytes($"{relLockFilePath}\r\n");
                 await file.WriteAsync(content, 0, content.Length);
             } catch (IOException e) {
                 MusicMixer.Logger.Warn(e, e.Message);
@@ -113,17 +113,17 @@ namespace Nekres.Music_Mixer.Core.Services {
             _outOfCombatTimer?.Dispose();
             _outOfCombatTimerLong.Elapsed -= OutOfCombatTimerElapsed;
             _outOfCombatTimerLong?.Dispose();
-            GameIntegration.Gw2Instance.Gw2Closed         -= OnGw2Closed;
-            Gw2Mumble.PlayerCharacter.CurrentMountChanged -= OnMountChanged;
-            Gw2Mumble.CurrentMap.MapChanged               -= OnMapChanged;
-            Gw2Mumble.PlayerCharacter.IsInCombatChanged   -= OnIsInCombatChanged;
+            GameService.GameIntegration.Gw2Instance.Gw2Closed         -= OnGw2Closed;
+            GameService.Gw2Mumble.PlayerCharacter.CurrentMountChanged -= OnMountChanged;
+            GameService.Gw2Mumble.CurrentMap.MapChanged               -= OnMapChanged;
+            GameService.Gw2Mumble.PlayerCharacter.IsInCombatChanged   -= OnIsInCombatChanged;
         }
 
         private void Initialize() {
-            Gw2Mumble.PlayerCharacter.CurrentMountChanged += OnMountChanged;
-            Gw2Mumble.CurrentMap.MapChanged += OnMapChanged;
-            Gw2Mumble.PlayerCharacter.IsInCombatChanged += OnIsInCombatChanged;
-            GameIntegration.Gw2Instance.Gw2Closed += OnGw2Closed;
+            GameService.Gw2Mumble.PlayerCharacter.CurrentMountChanged += OnMountChanged;
+            GameService.Gw2Mumble.CurrentMap.MapChanged += OnMapChanged;
+            GameService.Gw2Mumble.PlayerCharacter.IsInCombatChanged += OnIsInCombatChanged;
+            GameService.GameIntegration.Gw2Instance.Gw2Closed += OnGw2Closed;
         }
 
         public void Update() {
@@ -132,15 +132,20 @@ namespace Nekres.Music_Mixer.Core.Services {
 
             if (DateTime.UtcNow.Subtract(_lastLockFileCheck).TotalMilliseconds > 200) {
                 _lastLockFileCheck = DateTime.UtcNow;
-                if (FileUtil.IsFileLocked(_defeatedLockFile)) {
-                    this.CurrentState = State.Defeated;
-                } else if (this.CurrentState == State.Defeated) {
-                    this.CurrentState = State.StandBy;
-                }
+                CheckLockFile(State.Defeated);
             }
         }
 
-        private void CheckWaterLevel() => IsSubmerged = Gw2Mumble.PlayerCamera.Position.Z <= 0;
+        private void CheckLockFile(State state) {
+            var absLockFilePath = Path.Combine(DirectoryUtil.MusicPath, $"{State.Defeated}\\{_lockFile}");
+            if (FileUtil.IsFileLocked(absLockFilePath)) {
+                this.CurrentState = state;
+            } else if (this.CurrentState == state) {
+                this.CurrentState = State.StandBy;
+            }
+        }
+
+        private void CheckWaterLevel() => IsSubmerged = GameService.Gw2Mumble.PlayerCamera.Position.Z <= 0;
         private void CheckTyrianTime() => TyrianTime = TyrianTimeUtil.GetCurrentDayCycle();
 
         private void OnGw2Closed(object sender, EventArgs e) {
@@ -176,7 +181,9 @@ namespace Nekres.Music_Mixer.Core.Services {
             }
             else if (CurrentState == State.Battle)
             {
-                if (Gw2Mumble.CurrentMap.Type.IsInstance() || Gw2Mumble.CurrentMap.Type.IsWvW() || Gw2Mumble.CurrentMap.Type == MapType.PublicMini)
+                if (GameService.Gw2Mumble.CurrentMap.Type.IsInstance() || 
+                    GameService.Gw2Mumble.CurrentMap.Type.IsWvW() || 
+                    GameService.Gw2Mumble.CurrentMap.Type == MapType.PublicMini)
                 {
                     _outOfCombatTimerLong.Restart();
                 }
