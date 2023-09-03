@@ -35,6 +35,7 @@ namespace Nekres.Music_Mixer {
 
         internal SettingEntry<float>                     MasterVolume;
         internal SettingEntry<bool>                      ToggleMountedPlaylist;
+        internal SettingEntry<bool>                      ToggleDefeatedPlaylist;
         internal SettingEntry<YtDlpService.AudioBitrate> AverageBitrate;
         internal SettingEntry<bool>                      MuteWhenInBackground;
 
@@ -58,20 +59,23 @@ namespace Nekres.Music_Mixer {
         public MusicMixer([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters) { Instance = this; }
 
         protected override void DefineSettings(SettingCollection settings) {
-            MasterVolume = settings.DefineSetting("master_volume", 50f, 
-                () => "Master Volume", 
-                () => "Sets the audio volume.");
+            var playlists = settings.AddSubCollection("playlists", true, () => "Playlists");
+            ToggleMountedPlaylist = playlists.DefineSetting("mounted", true, 
+                                                            () => "Enable Mount Music", 
+                                                            () => "If enabled, plays music from one of the mounted playlists when mounted.");
+            ToggleDefeatedPlaylist = playlists.DefineSetting("defeated", true,
+                                                             () => "Enable Defeated Music", 
+                                                             () => "If enabled, plays music from the defeated playlist when defeated.");
 
-            MuteWhenInBackground = settings.DefineSetting("mute_in_background", false,
-                () => "Mute when GW2 is in the background");
-
-            ToggleMountedPlaylist = settings.DefineSetting("enable_mounted_playlist", true, 
-                () => "Use mounted playlist", 
-                () => "Whether songs of the mounted playlist should be played while mounted.");
-
-            AverageBitrate = settings.DefineSetting("average_bitrate", YtDlpService.AudioBitrate.B320, 
-                () => "Average bitrate limit", 
-                () => "Sets the average bitrate of the audio used in streaming.");
+            var audio = settings.AddSubCollection("audio", true, () => "Sound Options");
+            MasterVolume = audio.DefineSetting("master_volume", 50f,
+                                              () => "Master Volume",
+                                              () => "Sets the audio volume.");
+            MuteWhenInBackground = audio.DefineSetting("mute_in_background", false,
+                                                       () => "Mute when GW2 is in the background");
+            AverageBitrate = audio.DefineSetting("average_bitrate", YtDlpService.AudioBitrate.B320, 
+                                                 () => "Average bitrate limit",
+                                                 () => "Sets the average bitrate of the audio used in streaming.");
         }
 
         protected override void Initialize()
@@ -176,9 +180,12 @@ namespace Nekres.Music_Mixer {
         /// <inheritdoc />
         protected override void Unload()
         {
-            _moduleWindow?.Dispose();
-            if (_cornerIcon != null)
-            {
+            if (_moduleWindow != null) {
+                _moduleWindow.TabChanged -= OnTabChanged;
+                _moduleWindow.Dispose();
+            }
+
+            if (_cornerIcon != null) {
                 _cornerIcon.LeftMouseButtonReleased -= OnModuleIconClick;
                 _cornerIcon.Dispose();
             }
