@@ -155,15 +155,18 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         public void Dispose() {
+            MusicMixer.Instance.Gw2State.IsSubmergedChanged          -= OnIsSubmergedChanged;
+            MusicMixer.Instance.Gw2State.StateChanged                -= OnStateChanged;
+            GameService.GameIntegration.Gw2Instance.Gw2LostFocus     -= OnGw2LostFocus;
+            GameService.GameIntegration.Gw2Instance.Gw2AcquiredFocus -= OnGw2AcquiredFocus;
+            GameService.GameIntegration.Gw2Instance.Gw2Closed        -= OnGw2Closed;
+
+            this.AudioTrack?.Dispose();
+
             // Reset GW2 volume
             if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
                 AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 1);
             }
-
-            this.AudioTrack?.Dispose();
-
-            MusicMixer.Instance.Gw2State.IsSubmergedChanged -= OnIsSubmergedChanged;
-            MusicMixer.Instance.Gw2State.StateChanged       -= OnStateChanged;
         }
 
         private void OnGw2LostFocus(object o, EventArgs e) {

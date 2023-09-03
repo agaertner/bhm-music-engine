@@ -130,10 +130,9 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 Height = 32,
                 Top = _tracksPanel.Bottom + Panel.BOTTOM_PADDING,
                 Left = _tracksPanel.Left,
-                Text = $"Paste From Clipboard [{_pasteShortcut.GetBindingDisplayText()}]"
+                Text = $"Paste From Clipboard [{_pasteShortcut.GetBindingDisplayText()}]",
+                BasicTooltipText = "Paste a video or audio link from your clipboard to add it to the playlist.\nRecommended platforms: SoundCloud, YouTube.",
             };
-
-
 
             foreach (var track in _playlist.Tracks) {
                 AddBgmEntry(track, _tracksPanel);
@@ -288,7 +287,10 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                             cb.GetPrivateField("_checked").SetValue(cb, !e.Checked); // Skip invoking CheckedChanged
                             ScreenNotification.ShowNotification("Something went wrong. Please try again.", ScreenNotification.NotificationType.Error);
                             GameService.Content.PlaySoundEffectByName("error");
+                            return;
                         }
+
+                        GameService.Content.PlaySoundEffectByName("color-change");
                     };
                 }
 

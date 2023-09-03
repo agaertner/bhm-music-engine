@@ -5,6 +5,8 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Blish_HUD.Controls;
+
 namespace Nekres.Music_Mixer.Core.Services {
     public class Gw2StateService : IDisposable
     {
@@ -71,17 +73,33 @@ namespace Nekres.Music_Mixer.Core.Services {
         private DateTime _lastLockFileCheck = DateTime.UtcNow.AddSeconds(10);
         public Gw2StateService() {
 
-            _inCombatTimer = new NTimer(6500) { AutoReset = false };
-            _inCombatTimer.Elapsed += InCombatTimerElapsed;
-            _outOfCombatTimer = new NTimer(3250) { AutoReset = false };
-            _outOfCombatTimer.Elapsed += OutOfCombatTimerElapsed;
-            _outOfCombatTimerLong = new NTimer(20250) { AutoReset = false };
+            _inCombatTimer                =  new NTimer(6500) { AutoReset = false };
+            _inCombatTimer.Elapsed        += InCombatTimerElapsed;
+            _outOfCombatTimer             =  new NTimer(3250) { AutoReset = false };
+            _outOfCombatTimer.Elapsed     += OutOfCombatTimerElapsed;
+            _outOfCombatTimerLong         =  new NTimer(20250) { AutoReset = false };
             _outOfCombatTimerLong.Elapsed += OutOfCombatTimerElapsed;
-            Initialize();
+
+            GameService.Gw2Mumble.PlayerCharacter.CurrentMountChanged += OnMountChanged;
+            GameService.Gw2Mumble.CurrentMap.MapChanged               += OnMapChanged;
+            GameService.Gw2Mumble.PlayerCharacter.IsInCombatChanged   += OnIsInCombatChanged;
+            GameService.GameIntegration.Gw2Instance.Gw2Closed         += OnGw2Closed;
+
+            MusicMixer.Instance.ToggleDefeatedPlaylist.SettingChanged += OnToggleDefeatedPlaylistChanged;
+        }
+
+        private async void OnToggleDefeatedPlaylistChanged(object sender, ValueChangedEventArgs<bool> e) {
+            if (e.NewValue) {
+                await SetupLockFiles(State.Defeated);
+                ScreenNotification.ShowNotification("Defeated Music requires game restart.");
+                GameService.Content.PlaySoundEffectByName("color-change");
+            }
         }
 
         public async Task SetupLockedAudioFileHack() {
-            await SetupLockFiles(State.Defeated);
+            if (MusicMixer.Instance.ToggleDefeatedPlaylist.Value) {
+                await SetupLockFiles(State.Defeated);
+            }
         }
 
         private async Task SetupLockFiles(State state) {
@@ -92,7 +110,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                 file.Position = 0;
                 var content = Encoding.UTF8.GetBytes($"{relLockFilePath}\r\n");
                 await file.WriteAsync(content, 0, content.Length);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 MusicMixer.Logger.Warn(e, e.Message);
             }
         }
@@ -107,23 +125,25 @@ namespace Nekres.Music_Mixer.Core.Services {
         }
 
         public void Dispose() {
-            _inCombatTimer.Elapsed -= InCombatTimerElapsed;
-            _inCombatTimer?.Dispose();
-            _outOfCombatTimer.Elapsed -= OutOfCombatTimerElapsed;
-            _outOfCombatTimer?.Dispose();
-            _outOfCombatTimerLong.Elapsed -= OutOfCombatTimerElapsed;
-            _outOfCombatTimerLong?.Dispose();
-            GameService.GameIntegration.Gw2Instance.Gw2Closed         -= OnGw2Closed;
             GameService.Gw2Mumble.PlayerCharacter.CurrentMountChanged -= OnMountChanged;
             GameService.Gw2Mumble.CurrentMap.MapChanged               -= OnMapChanged;
             GameService.Gw2Mumble.PlayerCharacter.IsInCombatChanged   -= OnIsInCombatChanged;
-        }
+            GameService.GameIntegration.Gw2Instance.Gw2Closed         -= OnGw2Closed;
 
-        private void Initialize() {
-            GameService.Gw2Mumble.PlayerCharacter.CurrentMountChanged += OnMountChanged;
-            GameService.Gw2Mumble.CurrentMap.MapChanged += OnMapChanged;
-            GameService.Gw2Mumble.PlayerCharacter.IsInCombatChanged += OnIsInCombatChanged;
-            GameService.GameIntegration.Gw2Instance.Gw2Closed += OnGw2Closed;
+            if (_inCombatTimer != null) {
+                _inCombatTimer.Elapsed -= InCombatTimerElapsed;
+                _inCombatTimer.Dispose();
+            }
+
+            if (_outOfCombatTimer != null) {
+                _outOfCombatTimer.Elapsed -= OutOfCombatTimerElapsed;
+                _outOfCombatTimer.Dispose();
+            }
+
+            if (_outOfCombatTimerLong != null) {
+                _outOfCombatTimerLong.Elapsed -= OutOfCombatTimerElapsed;
+                _outOfCombatTimerLong.Dispose();
+            }
         }
 
         public void Update() {
@@ -132,7 +152,9 @@ namespace Nekres.Music_Mixer.Core.Services {
 
             if (DateTime.UtcNow.Subtract(_lastLockFileCheck).TotalMilliseconds > 200) {
                 _lastLockFileCheck = DateTime.UtcNow;
-                CheckLockFile(State.Defeated);
+                if (MusicMixer.Instance.ToggleDefeatedPlaylist.Value) {
+                    CheckLockFile(State.Defeated);
+                }
             }
         }
 
