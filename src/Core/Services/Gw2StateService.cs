@@ -90,7 +90,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                 using var file = File.Create(Path.Combine(DirectoryUtil.MusicPath, $"{Path.GetFileNameWithoutExtension(lockFile)}.m3u"));
                 file.Position = 0;
                 var name    = Path.GetFileName(lockFile);
-                var content = $"#EXTM3U\n#EXTINF:5,{name}\n{name}\n".GetBytes();
+                var content = $"#EXTM3U\r\n#EXTINF:5,{name}\r\n{name}\r\n".GetBytes();
                 await file.WriteAsync(content, 0, content.Length);
             } catch (IOException e) {
                 MusicMixer.Logger.Warn(e, e.Message);
@@ -151,7 +151,7 @@ namespace Nekres.Music_Mixer.Core.Services {
 
         private void OnMountChanged(object o, ValueEventArgs<MountType> e)
         {
-            if (MusicMixer.Instance.ToggleMountedPlaylist.Value) {
+            if (!MusicMixer.Instance.ToggleMountedPlaylist.Value) {
                 return;
             }
 
