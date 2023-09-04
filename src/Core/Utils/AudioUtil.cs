@@ -5,17 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace Nekres.Music_Mixer {
     public static class AudioUtil {
 
         private static Glide.Tween             _animEase;
         private static List<SimpleAudioVolume> _volumes;
-
-        static AudioUtil() {
-            _volumes = new List<SimpleAudioVolume>();
-        }
 
         public static float GetNormalizedVolume(float volume) {
             var masterVolume = MathHelper.Clamp(MusicMixer.Instance.MasterVolume.Value / 1000f, 0f, 1f);
@@ -39,26 +34,28 @@ namespace Nekres.Music_Mixer {
             Dispose(_volumes); 
 
             // Retrieve new volumes in case new devices were plugged or process output has changed.
-            Interlocked.Exchange(ref _volumes, GetVolumes(processId));
+            var volumes = GetVolumes(processId);
 
-            if (!_volumes.Any()) {
+            if (!volumes.Any()) {
                 return;
             }
 
-            var currentVolume = _volumes.Average(v => v.Volume);
+            var currentVolume = volumes.Average(v => v.Volume);
 
             _animEase = GameService.Animation.Tweener.Timer(duration).Ease(t => {
                 var delta     = (targetVolume - currentVolume) * t;
                 var newVolume = currentVolume + delta;
 
-                foreach (var v in _volumes) {
+                foreach (var v in volumes) {
                     v.Volume = newVolume > 1 ? 1 : newVolume < 0 ? 0 : newVolume;
                 }
 
                 return newVolume;
             }).OnComplete(() => {
-                Dispose(_volumes);
+                Dispose(volumes);
             });
+
+            _volumes = volumes.ToList();
         }
 
         private static void Dispose(List<SimpleAudioVolume> disposables) {
