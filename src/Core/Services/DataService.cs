@@ -21,7 +21,7 @@ namespace Nekres.Music_Mixer.Core.Services {
         private          ManualResetEvent     _lockReleased = new(false);
         private          bool                 _lockAcquired = false;
 
-        private const  string TBL_PLAYLISTS        = "playlists";
+        private const  string TBL_PLAYLISTS       = "playlists";
         public const  string TBL_AUDIO_SOURCES    = "audio_sources";
         private const string TBL_THUMBNAILS       = "thumbnails";
         private const string TBL_THUMBNAIL_CHUNKS = "thumbnail_chunks";

@@ -12,6 +12,9 @@ namespace Nekres.Music_Mixer.Core.Services.Data {
         [BsonField("external_id")]
         public string ExternalId { get; set; }
 
+        [BsonField("enabled")]
+        public bool Enabled { get; set; }
+
         [BsonField("playlist")]
         [BsonRef(DataService.TBL_AUDIO_SOURCES)]
         public List<AudioSource> Tracks { get; set; }

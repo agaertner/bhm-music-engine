@@ -7,6 +7,7 @@ using Glide;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Nekres.Music_Mixer.Core.Services;
 using Nekres.Music_Mixer.Core.Services.Data;
 using System;
 using System.Linq;
@@ -110,6 +111,38 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 TextColor = Color.White,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Middle
+            };
+
+            var enabledCb = new Checkbox {
+                Parent = buildPanel,
+                Width = 100,
+                Top = 20,
+                Left = Panel.LEFT_PADDING,
+                Text = "Enabled",
+                BasicTooltipText = "Enable or disable this playlist.",
+                Checked = _playlist.Enabled
+            };
+
+            enabledCb.CheckedChanged += async (_, e) => {
+                _playlist.Enabled = e.Checked;
+
+                if (!MusicMixer.Instance.Data.Upsert(_playlist)) {
+                    ScreenNotification.ShowNotification("Something went wrong. Please try again.", ScreenNotification.NotificationType.Error);
+                    GameService.Content.PlaySoundEffectByName("error");
+                    return;
+                }
+
+                if (_playlist.ExternalId.Equals("Defeated")) {
+                    if (e.Checked) {
+                        await MusicMixer.Instance.Gw2State.SetupLockFiles(Gw2StateService.State.Defeated);
+                    } else {
+                        MusicMixer.Instance.Gw2State.RevertLockFiles(Gw2StateService.State.Defeated);
+                    }
+                }
+
+                if (e.Checked) {
+                    GameService.Content.PlaySoundEffectByName("color-change");
+                }
             };
 
             _tracksPanel = new FlowPanel {

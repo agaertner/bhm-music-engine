@@ -8,13 +8,13 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Nekres.Music_Mixer.Core.Services;
 using Nekres.Music_Mixer.Core.Services.Audio;
+using Nekres.Music_Mixer.Core.Services.Data;
+using Nekres.Music_Mixer.Core.UI.Library;
 using Nekres.Music_Mixer.Core.UI.Playlists;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
-using Nekres.Music_Mixer.Core.Services.Data;
-using Nekres.Music_Mixer.Core.UI.Library;
 
 namespace Nekres.Music_Mixer {
 
@@ -34,8 +34,6 @@ namespace Nekres.Music_Mixer {
         #endregion
 
         internal SettingEntry<float>                     MasterVolume;
-        internal SettingEntry<bool>                      ToggleMountedPlaylist;
-        internal SettingEntry<bool>                      ToggleDefeatedPlaylist;
         internal SettingEntry<YtDlpService.AudioBitrate> AverageBitrate;
         internal SettingEntry<bool>                      MuteWhenInBackground;
 
@@ -59,14 +57,6 @@ namespace Nekres.Music_Mixer {
         public MusicMixer([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters) { Instance = this; }
 
         protected override void DefineSettings(SettingCollection settings) {
-            var playlists = settings.AddSubCollection("playlists", true, () => "Playlists");
-            ToggleMountedPlaylist = playlists.DefineSetting("mounted", true, 
-                                                            () => "Enable Mount Music", 
-                                                            () => "If enabled, plays music from one of the mounted playlists when mounted.");
-            ToggleDefeatedPlaylist = playlists.DefineSetting("defeated", true,
-                                                             () => "Enable Defeated Music", 
-                                                             () => "If enabled, plays music from the defeated playlist when defeated.");
-
             var audio = settings.AddSubCollection("audio", true, () => "Sound Options");
             MasterVolume = audio.DefineSetting("master_volume", 50f,
                                               () => "Master Volume",
@@ -107,7 +97,6 @@ namespace Nekres.Music_Mixer {
 
         protected override async Task LoadAsync() {
             await YtDlp.Update(GetModuleProgressHandler());
-            await Gw2State.SetupLockedAudioFileHack();
         }
 
         protected override void OnModuleLoaded(EventArgs e) {
@@ -147,7 +136,6 @@ namespace Nekres.Music_Mixer {
                         Tracks     = new List<AudioSource>()
                     };
                 }
-
                 return new BgmLibraryView(context, "Defeated");
             }, "Defeated");
             _moduleWindow.Tabs.Add(defeatedTab);

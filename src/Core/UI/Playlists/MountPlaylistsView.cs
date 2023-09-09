@@ -72,6 +72,7 @@ namespace Nekres.Music_Mixer.Core.UI.Playlists {
                     if (!MusicMixer.Instance.Data.GetMountPlaylist(mountType, out var context)) {
                         context = new Playlist {
                             ExternalId = mountType.ToString(),
+                            Enabled    = true,
                             Tracks     = new List<AudioSource>()
                         };
                     }

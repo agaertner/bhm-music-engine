@@ -214,7 +214,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                         return;
                     }
 
-                    if (context.IsEmpty) {
+                    if (context.IsEmpty || !context.Enabled) {
                         return;
                     }
 
@@ -225,7 +225,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                         return;
                     }
 
-                    if (context2.IsEmpty) {
+                    if (context2.IsEmpty || !context2.Enabled) {
                         return;
                     }
 

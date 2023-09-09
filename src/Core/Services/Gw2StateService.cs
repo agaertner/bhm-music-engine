@@ -1,11 +1,12 @@
 ﻿using Blish_HUD;
+using Blish_HUD.Controls;
 using Blish_HUD.Extended;
 using Gw2Sharp.Models;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Blish_HUD.Controls;
 
 namespace Nekres.Music_Mixer.Core.Services {
     public class Gw2StateService : IDisposable
@@ -71,6 +72,14 @@ namespace Nekres.Music_Mixer.Core.Services {
 
         private string   _lockFile          = "silence.wav";
         private DateTime _lastLockFileCheck = DateTime.UtcNow.AddSeconds(10);
+
+        private int[] _guildHallIds = {
+            1068, 1101, 1107, 1108, 1121, 1125, // Gilded Hollow
+            1069, 1071, 1076, 1104, 1124, 1144, // Lost Precipice
+            1214, 1215, 1224, 1232, 1243, 1250, // Windswept Haven
+            1419, 1426, 1435, 1444, 1462 // Isle of Reflection
+        };
+
         public Gw2StateService() {
 
             _inCombatTimer                =  new NTimer(6500) { AutoReset = false };
@@ -84,44 +93,66 @@ namespace Nekres.Music_Mixer.Core.Services {
             GameService.Gw2Mumble.CurrentMap.MapChanged               += OnMapChanged;
             GameService.Gw2Mumble.PlayerCharacter.IsInCombatChanged   += OnIsInCombatChanged;
             GameService.GameIntegration.Gw2Instance.Gw2Closed         += OnGw2Closed;
-
-            MusicMixer.Instance.ToggleDefeatedPlaylist.SettingChanged += OnToggleDefeatedPlaylistChanged;
         }
 
-        private async void OnToggleDefeatedPlaylistChanged(object sender, ValueChangedEventArgs<bool> e) {
-            if (e.NewValue) {
-                await SetupLockFiles(State.Defeated);
-                ScreenNotification.ShowNotification("Defeated Music requires game restart.");
-                GameService.Content.PlaySoundEffectByName("color-change");
+        private void ChangeState(State newState) {
+            switch (newState) {
+                case State.Battle when GameService.Gw2Mumble.CurrentMap.Type == MapType.Public:
+                    CurrentState = newState;
+                    break;
+                case State.Mounted:
+                    if (GameService.Gw2Mumble.CurrentMap.Type == MapType.Public || 
+                        _guildHallIds.Contains(GameService.Gw2Mumble.CurrentMap.Id)) 
+                    {
+                        CurrentState = newState;
+                    }
+                    break;
+                case State.Competitive:
+                case State.Defeated:
+                case State.StandBy:
+                default: CurrentState = newState;
+                    break;
             }
         }
 
-        public async Task SetupLockedAudioFileHack() {
-            if (MusicMixer.Instance.ToggleDefeatedPlaylist.Value) {
-                await SetupLockFiles(State.Defeated);
-            }
-        }
-
-        private async Task SetupLockFiles(State state) {
+        public async Task SetupLockFiles(State state) {
             var relLockFilePath = $"{state}\\{_lockFile}";
             await MusicMixer.Instance.ContentsManager.Extract($"audio/{_lockFile}", Path.Combine(DirectoryUtil.MusicPath, relLockFilePath), false);
             try {
-                using var file = File.Create(Path.Combine(DirectoryUtil.MusicPath, $"{state}.m3u"));
+                var path = Path.Combine(DirectoryUtil.MusicPath, $"{state}.m3u");
+                if (File.Exists(path)) {
+                    File.Copy(path, Path.Combine(DirectoryUtil.MusicPath, $"{state}.backup.m3u"), true);
+                }
+                using var file = File.Create(path);
                 file.Position = 0;
                 var content = Encoding.UTF8.GetBytes($"{relLockFilePath}\r\n");
                 await file.WriteAsync(content, 0, content.Length);
+                ScreenNotification.ShowNotification($"{state} playlist created. Game restart required.", ScreenNotification.NotificationType.Warning);
+            } catch (Exception e) {
+                MusicMixer.Logger.Warn(e, e.Message);
+            }
+        }
+
+        public void RevertLockFiles(State state) {
+            try {
+                var path = Path.Combine(DirectoryUtil.MusicPath, $"{state}.backup.m3u");
+
+                if (File.Exists(path)) {
+                    File.Copy(path, Path.Combine(DirectoryUtil.MusicPath, $"{state}.m3u"), true);
+                    File.Delete(path);
+                    ScreenNotification.ShowNotification($"{state} playlist reverted. Game restart required.", ScreenNotification.NotificationType.Warning);
+                }
             } catch (Exception e) {
                 MusicMixer.Logger.Warn(e, e.Message);
             }
         }
 
         private void InCombatTimerElapsed(object sender, EventArgs e) {
-            this.CurrentState = State.Battle;
+            ChangeState(State.Battle);
         }
 
         private void OutOfCombatTimerElapsed(object sender, EventArgs e) {
-            this.CurrentState = State.StandBy;
-            
+            ChangeState(State.StandBy);
         }
 
         public void Dispose() {
@@ -152,18 +183,16 @@ namespace Nekres.Music_Mixer.Core.Services {
 
             if (DateTime.UtcNow.Subtract(_lastLockFileCheck).TotalMilliseconds > 200) {
                 _lastLockFileCheck = DateTime.UtcNow;
-                if (MusicMixer.Instance.ToggleDefeatedPlaylist.Value) {
-                    CheckLockFile(State.Defeated);
-                }
+                CheckLockFile(State.Defeated);
             }
         }
 
         private void CheckLockFile(State state) {
-            var absLockFilePath = Path.Combine(DirectoryUtil.MusicPath, $"{State.Defeated}\\{_lockFile}");
+            var absLockFilePath = Path.Combine(DirectoryUtil.MusicPath, $"{state}\\{_lockFile}");
             if (FileUtil.IsFileLocked(absLockFilePath)) {
-                this.CurrentState = state;
+                ChangeState(state);
             } else if (this.CurrentState == state) {
-                this.CurrentState = State.StandBy;
+                ChangeState(State.StandBy);
             }
         }
 
@@ -178,15 +207,11 @@ namespace Nekres.Music_Mixer.Core.Services {
 
         private void OnMountChanged(object o, ValueEventArgs<MountType> e)
         {
-            if (!MusicMixer.Instance.ToggleMountedPlaylist.Value) {
-                return;
-            }
-
             if (_outOfCombatTimer.IsRunning || _outOfCombatTimerLong.IsRunning) {
                 return;
             }
 
-            this.CurrentState = e.Value > 0 ? State.Mounted : State.StandBy;
+            ChangeState(e.Value > 0 ? State.Mounted : State.StandBy);
         }
 
         private void OnMapChanged(object o, ValueEventArgs<int> e) {
@@ -197,26 +222,27 @@ namespace Nekres.Music_Mixer.Core.Services {
         }
 
         private void OnIsInCombatChanged(object o, ValueEventArgs<bool> e) {
-            if (e.Value)
-            {
+            if (e.Value) {
+
                 _inCombatTimer.Restart();
-            }
-            else if (CurrentState == State.Battle)
-            {
+
+            } else if (CurrentState == State.Battle) {
+
                 if (GameService.Gw2Mumble.CurrentMap.Type.IsInstance() || 
                     GameService.Gw2Mumble.CurrentMap.Type.IsWvW() || 
                     GameService.Gw2Mumble.CurrentMap.Type == MapType.PublicMini)
                 {
                     _outOfCombatTimerLong.Restart();
-                }
-                else
-                {
+
+                } else {
+
                     _outOfCombatTimer.Restart();
                 }
-            }
-            else
-            {
+
+            } else {
+
                 _inCombatTimer.Stop();
+
             }
         }
 

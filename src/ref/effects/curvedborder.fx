@@ -28,7 +28,6 @@ float4 CurvedBorder(float4 Position : SV_POSITION, float4 Color : COLOR0, float2
     
       // anti-aliasing by alpha transition
       sam = lerp(sam, float4(0, 0, 0, 0), alpha);
-      sam.a *= Opacity;
       
     } else if (alpha > 0) {
     
@@ -37,6 +36,7 @@ float4 CurvedBorder(float4 Position : SV_POSITION, float4 Color : COLOR0, float2
       
     }
     
+    sam.a *= Opacity;
     return sam;
 }
 
