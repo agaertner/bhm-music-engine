@@ -21,8 +21,8 @@ namespace Nekres.Music_Mixer.Core.Services {
         private          ManualResetEvent     _lockReleased = new(false);
         private          bool                 _lockAcquired = false;
 
-        private const  string TBL_PLAYLISTS       = "playlists";
-        public const  string TBL_AUDIO_SOURCES    = "audio_sources";
+        private const string TBL_PLAYLISTS       = "playlists";
+        public const string TBL_AUDIO_SOURCES    = "audio_sources";
         private const string TBL_THUMBNAILS       = "thumbnails";
         private const string TBL_THUMBNAIL_CHUNKS = "thumbnail_chunks";
 
@@ -38,12 +38,21 @@ namespace Nekres.Music_Mixer.Core.Services {
         public AsyncTexture2D GetThumbnail(AudioSource source) {
             LiteFileStream<string> stream = null;
 
+            var texture = new AsyncTexture2D();
+
+            if (string.IsNullOrWhiteSpace(source.ExternalId)) {
+                return texture;
+            }
+
             this.AcquireWriteLock();
             try {
                 using var db = new LiteDatabase(_connectionString);
 
                 var thumbnails = db.GetStorage<string>(TBL_THUMBNAILS, TBL_THUMBNAIL_CHUNKS);
-                stream = thumbnails.OpenRead(source.PageUrl);
+
+                if (thumbnails.Exists(source.ExternalId)) {
+                    stream = thumbnails.OpenRead(source.ExternalId);
+                }
 
             } catch (Exception e) {
 
@@ -53,11 +62,9 @@ namespace Nekres.Music_Mixer.Core.Services {
                 this.ReleaseWriteLock();
             }
 
-            var texture = new AsyncTexture2D();
-
-            if (stream == null) {
+            if (stream == null && !string.IsNullOrWhiteSpace(source.PageUrl)) {
                 // Thumbnail not cached, request it.
-                MusicMixer.Instance.YtDlp.GetThumbnail(source.PageUrl, thumbnailUri => ThumbnailUrlReceived(source.PageUrl, thumbnailUri, texture));
+                MusicMixer.Instance.YtDlp.GetThumbnail(source.PageUrl, thumbnailUri => ThumbnailUrlReceived(source.ExternalId, thumbnailUri, texture));
                 return texture;
             }
 
