@@ -62,7 +62,12 @@ namespace Nekres.Music_Mixer.Core.Services {
                 this.ReleaseWriteLock();
             }
 
-            if (stream == null && !string.IsNullOrWhiteSpace(source.PageUrl)) {
+            if (stream == null) {
+
+                if (string.IsNullOrWhiteSpace(source.PageUrl)) {
+                    return texture;
+                }
+
                 // Thumbnail not cached, request it.
                 MusicMixer.Instance.YtDlp.GetThumbnail(source.PageUrl, thumbnailUri => ThumbnailUrlReceived(source.ExternalId, thumbnailUri, texture));
                 return texture;
@@ -72,7 +77,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                 using var gdx = GameService.Graphics.LendGraphicsDeviceContext();
                 texture.SwapTexture(Texture2D.FromStream(gdx.GraphicsDevice, stream));
                 return texture;
-            } catch (InvalidOperationException e) {
+            } catch (Exception e) {
                 // Unsupported image format.
                 MusicMixer.Logger.Info(e,e.Message);
             }
