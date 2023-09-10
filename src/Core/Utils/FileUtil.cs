@@ -5,11 +5,6 @@ using System.Threading.Tasks;
 namespace Nekres.Music_Mixer {
     internal static class FileUtil
     {
-        public static bool IsLocalPath(string p)
-        {
-            return new Uri(p).IsFile;
-        }
-
         /// <summary>
         /// Sanitize the filename and replace illegal characters.
         /// </summary>

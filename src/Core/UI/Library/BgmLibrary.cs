@@ -39,8 +39,12 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
         }
 
         private async void OnPastePressed(object sender, EventArgs e) {
+            if (this.ViewTarget?.Parent == null || _tracksPanel == null) {
+                return;
+            }
+
             // Only allow paste via shortcut if the mouse is hovering the tracks list.
-            if (_tracksPanel.ContentRegion.Contains(_tracksPanel.RelativeMousePosition)) {
+            if (this.ViewTarget.Parent.Visible && _tracksPanel.ContentRegion.Contains(_tracksPanel.RelativeMousePosition)) {
                 await FindAdd();
             };
         }
@@ -51,17 +55,30 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 GameService.Content.PlaySoundEffectByName("button-click");
                 return;
             }
-            _checkingLink = true;
 
-            ScreenNotification.ShowNotification("Link pasted. Checking… (Please wait.)");
+            _checkingLink = true;
 
             try {
                 var url = await ClipboardUtil.WindowsClipboardService.GetTextAsync();
 
+                if (!url.IsWebLink()) {
+                    ScreenNotification.ShowNotification("Your clipboard does not contain a valid link.", ScreenNotification.NotificationType.Error);
+                    GameService.Content.PlaySoundEffectByName("error");
+                    return;
+                }
+
+                ScreenNotification.ShowNotification("Link pasted. Checking… (Please wait.)");
+
                 var data = await MusicMixer.Instance.YtDlp.GetMetaData(url);
 
                 if (data.IsEmpty) {
-                    ScreenNotification.ShowNotification("Unsupported platform. Please check your link.", ScreenNotification.NotificationType.Error);
+                    ScreenNotification.ShowNotification("Unsupported website.", ScreenNotification.NotificationType.Error);
+                    GameService.Content.PlaySoundEffectByName("error");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(data.Id) || string.IsNullOrWhiteSpace(data.Url)) {
+                    ScreenNotification.ShowNotification("Unsupported link. Unable to extract media info.", ScreenNotification.NotificationType.Error);
                     GameService.Content.PlaySoundEffectByName("error");
                     return;
                 }
@@ -75,11 +92,11 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 if (!MusicMixer.Instance.Data.GetTrackByMediaId(data.Id, out var source)) {
                     source = new AudioSource {
                         ExternalId = data.Id,
-                        Uploader = data.Uploader,
-                        Title = data.Title,
-                        PageUrl = data.Url,
-                        Duration = data.Duration,
-                        Volume = 1,
+                        Uploader   = data.Uploader,
+                        Title      = data.Title,
+                        PageUrl    = data.Url,
+                        Duration   = data.Duration,
+                        Volume     = 1,
                         DayCycles = AudioSource.DayCycle.Day |
                                     AudioSource.DayCycle.Night
                     };
@@ -95,6 +112,13 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 MusicMixer.Instance.Data.Upsert(_playlist);
 
                 AddBgmEntry(source, _tracksPanel);
+
+            } catch (Exception e) {
+
+                ScreenNotification.ShowNotification("Something went wrong. Please try again.", ScreenNotification.NotificationType.Error);
+                GameService.Content.PlaySoundEffectByName("error");
+                MusicMixer.Logger.Info(e, e.Message);
+
             } finally {
                 _checkingLink = false;
             }
