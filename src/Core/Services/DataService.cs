@@ -62,7 +62,12 @@ namespace Nekres.Music_Mixer.Core.Services {
                 this.ReleaseWriteLock();
             }
 
-            if (stream == null && !string.IsNullOrWhiteSpace(source.PageUrl)) {
+            if (stream == null) {
+
+                if (string.IsNullOrWhiteSpace(source.PageUrl)) {
+                    return texture;
+                }
+
                 // Thumbnail not cached, request it.
                 MusicMixer.Instance.YtDlp.GetThumbnail(source.PageUrl, thumbnailUri => ThumbnailUrlReceived(source.ExternalId, thumbnailUri, texture));
                 return texture;
@@ -72,7 +77,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                 using var gdx = GameService.Graphics.LendGraphicsDeviceContext();
                 texture.SwapTexture(Texture2D.FromStream(gdx.GraphicsDevice, stream));
                 return texture;
-            } catch (InvalidOperationException e) {
+            } catch (Exception e) {
                 // Unsupported image format.
                 MusicMixer.Logger.Info(e,e.Message);
             }
@@ -114,7 +119,7 @@ namespace Nekres.Music_Mixer.Core.Services {
         }
 
         public bool GetMapPlaylist(int mapId, out Playlist playlist) {
-            return GetPlaylist(mapId.ToString(), out playlist);
+            return GetPlaylist($"map_{mapId}", out playlist);
         }
 
         public bool Remove(AudioSource model) {
@@ -186,22 +191,6 @@ namespace Nekres.Music_Mixer.Core.Services {
             }
         }
 
-        public bool Upsert(Playlist model, string table) {
-            this.AcquireWriteLock();
-            try {
-                using var db = new LiteDatabase(_connectionString);
-
-                var collection = db.GetCollection<Playlist>(table);
-                collection.Upsert(model);
-                return true;
-            } catch (Exception e) {
-                MusicMixer.Logger.Warn(e, e.Message);
-                return false;
-            } finally {
-                this.ReleaseWriteLock();
-            }
-        }
-
         /// <summary>
         /// Releases all resources held by <see cref="DataService"/>.
         /// </summary>
@@ -234,7 +223,10 @@ namespace Nekres.Music_Mixer.Core.Services {
             var client = new WebClient();
             client.OpenReadAsync(new Uri(url));
 
-            client.OpenReadCompleted += (o, e) => {
+            client.OpenReadCompleted += (_, e) => {
+
+                using var stream = e.Result;
+
                 try {
                     if (e.Cancelled) {
                         return;
@@ -244,14 +236,18 @@ namespace Nekres.Music_Mixer.Core.Services {
                         throw e.Error;
                     }
 
-                    var       stream = e.Result;
-                    using var image  = Image.Load(stream);
-                    using var ms     = new MemoryStream();
+                    if (stream == null) {
+                        return;
+                    }
+
+                    using var image = Image.Load(stream);
+                    using var ms    = new MemoryStream();
                     image.Save(ms, JpegFormat.Instance);
                     ms.Position = 0;
 
                     // Cache the thumbnail
                     this.AcquireWriteLock();
+
                     try {
                         using var db = new LiteDatabase(_connectionString);
 
@@ -265,10 +261,11 @@ namespace Nekres.Music_Mixer.Core.Services {
                     using var gdx = GameService.Graphics.LendGraphicsDeviceContext();
                     texture.SwapTexture(Texture2D.FromStream(gdx.GraphicsDevice, ms));
 
-                    stream.Close();
-                    ((WebClient)o).Dispose();
-                } catch (Exception ex) when (ex is WebException or ImageFormatException or ArgumentException or InvalidOperationException) {
+                } catch (Exception ex) {
+                    // WebException or ImageFormatException or ArgumentException or InvalidOperationException
                     MusicMixer.Logger.Info(ex, ex.Message);
+                } finally {
+                    client.Dispose();
                 }
             };
         }
