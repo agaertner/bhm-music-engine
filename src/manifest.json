@@ -1,6 +1,6 @@
 {
   "name": "Mount Music",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "namespace": "Nekres.Music_Mixer",
   "package": "Music Mixer.dll",
   "manifest_version": 1,
