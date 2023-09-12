@@ -60,8 +60,11 @@ namespace Nekres.Music_Mixer {
                 // ERROR_LOCK_VIOLATION
             } catch (IOException e) when ((e.HResult & 0x0000FFFF) == 33) {
                 return true;
+            } catch (Exception e) {
+                MusicMixer.Logger.Info(e, e.Message);
+                return false;
             } finally {
-                stream?.Close();
+                stream?.Dispose();
             }
             return false;
         }

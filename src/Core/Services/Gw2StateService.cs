@@ -129,7 +129,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                 await file.WriteAsync(content, 0, content.Length);
                 ScreenNotification.ShowNotification($"{state} playlist created. Game restart required.", ScreenNotification.NotificationType.Warning);
             } catch (Exception e) {
-                MusicMixer.Logger.Warn(e, e.Message);
+                MusicMixer.Logger.Info(e, e.Message);
             }
         }
 
@@ -143,7 +143,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                     ScreenNotification.ShowNotification($"{state} playlist reverted. Game restart required.", ScreenNotification.NotificationType.Warning);
                 }
             } catch (Exception e) {
-                MusicMixer.Logger.Warn(e, e.Message);
+                MusicMixer.Logger.Info(e, e.Message);
             }
         }
 
