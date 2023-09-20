@@ -71,14 +71,8 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
 
                 var data = await MusicMixer.Instance.YtDlp.GetMetaData(url);
 
-                if (data.IsEmpty) {
+                if (data.IsError) {
                     ScreenNotification.ShowNotification("Unsupported website.", ScreenNotification.NotificationType.Error);
-                    GameService.Content.PlaySoundEffectByName("error");
-                    return;
-                }
-
-                if (string.IsNullOrWhiteSpace(data.Id) || string.IsNullOrWhiteSpace(data.Url)) {
-                    ScreenNotification.ShowNotification("Unsupported link. Unable to extract media info.", ScreenNotification.NotificationType.Error);
                     GameService.Content.PlaySoundEffectByName("error");
                     return;
                 }
@@ -283,14 +277,14 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 };
 
                 var title = new FormattedLabelBuilder().SetWidth(slidePanel.ContentRegion.Width -
-                                                                 thumbnail.Right                - delBttn.Width -
-                                                                 Panel.RIGHT_PADDING            - Control.ControlStandard.ControlOffset.X * 3)
+                                                                 thumbnail.Right - delBttn.Width -
+                                                                 Panel.RIGHT_PADDING - Control.ControlStandard.ControlOffset.X * 3)
                                                        .SetHeight(thumbnail.Height)
                                                        .SetVerticalAlignment(VerticalAlignment.Top)
                                                        .CreatePart(_audioSource.Title, o => {
                                                            o.SetFontSize(ContentService.FontSize.Size20);
                                                            o.MakeBold();
-                                                           if (string.IsNullOrEmpty(_audioSource.PageUrl)) {
+                                                           if (string.IsNullOrWhiteSpace(_audioSource.PageUrl)) {
                                                                o.SetLink(() => ScreenNotification.ShowNotification("Page Not Found.", ScreenNotification.NotificationType.Error));
                                                                GameService.Content.PlaySoundEffectByName("error");
                                                            } else {
@@ -303,13 +297,13 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 title.Left = thumbnail.Right + Control.ControlStandard.ControlOffset.X;
 
                 var cyclesPanel = new FlowPanel {
-                    Parent = slidePanel,
-                    Width = slidePanel.ContentRegion.Width - thumbnail.Right,
-                    Height = 32,
-                    Left = thumbnail.Right,
-                    Bottom = thumbnail.Bottom,
-                    FlowDirection = ControlFlowDirection.SingleLeftToRight,
-                    ControlPadding = new Vector2(Control.ControlStandard.ControlOffset.X, 0),
+                    Parent              = slidePanel,
+                    Width               = 140,
+                    Height              = 32,
+                    Right               = slidePanel.ContentRegion.Width - Panel.RIGHT_PADDING,
+                    Bottom              = thumbnail.Bottom,
+                    FlowDirection       = ControlFlowDirection.SingleLeftToRight,
+                    ControlPadding      = new Vector2(Control.ControlStandard.ControlOffset.X, 0),
                     OuterControlPadding = new Vector2(Control.ControlStandard.ControlOffset.X, 0)
                 };
 
