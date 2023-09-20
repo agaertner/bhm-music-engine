@@ -43,25 +43,9 @@ namespace Nekres.Music_Mixer.Core.Services.YtDlp {
             Url      = url      ?? string.Empty;
             Uploader = uploader ?? string.Empty;
             Duration = duration;
-
-            Validate();
-        }
-
-        private void Validate() {
-            // Id is required to avoid dublicates in a playlist and as thumbnail cache key.
-            if (string.IsNullOrWhiteSpace(Id)) {
-                IsError = true;
-            }
-
-            // Web Url is required to recreate audio urls.
-            if (!Url.IsWebLink()) {
-                IsError = true;
-            }
-
-            // A zero duration indicates an invalid link that wrongly passed previous checks.
-            if (Duration.TotalMilliseconds == 0) {
-                IsError = true;
-            }
+            IsError = string.IsNullOrWhiteSpace(Id) || // Id is required to avoid dublicates in a playlist and as thumbnail cache key.
+                      !Url.IsWebLink()              || // Web Url is required to recreate audio urls.
+                      Duration.TotalSeconds < 1;       // A zero duration indicates an invalid link that wrongly passed previous checks.
         }
     }
 }
