@@ -1,4 +1,4 @@
-﻿using Blish_HUD;
+using Blish_HUD;
 using Blish_HUD.Content;
 using Blish_HUD.Controls;
 using Blish_HUD.Graphics.UI;
@@ -303,13 +303,13 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 title.Left = thumbnail.Right + Control.ControlStandard.ControlOffset.X;
 
                 var cyclesPanel = new FlowPanel {
-                    Parent = slidePanel,
-                    Width = slidePanel.ContentRegion.Width - thumbnail.Right,
-                    Height = 32,
-                    Left = thumbnail.Right,
-                    Bottom = thumbnail.Bottom,
-                    FlowDirection = ControlFlowDirection.SingleLeftToRight,
-                    ControlPadding = new Vector2(Control.ControlStandard.ControlOffset.X, 0),
+                    Parent              = slidePanel,
+                    Width               = 140,
+                    Height              = 32,
+                    Right               = slidePanel.ContentRegion.Width - Panel.RIGHT_PADDING,
+                    Bottom              = thumbnail.Bottom,
+                    FlowDirection       = ControlFlowDirection.SingleLeftToRight,
+                    ControlPadding      = new Vector2(Control.ControlStandard.ControlOffset.X, 0),
                     OuterControlPadding = new Vector2(Control.ControlStandard.ControlOffset.X, 0)
                 };
 
