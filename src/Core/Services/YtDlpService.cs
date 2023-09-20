@@ -1,13 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using Blish_HUD;
+using Gapotchenko.FX.Diagnostics;
+using Nekres.Music_Mixer.Core.Services.YtDlp;
 using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Blish_HUD;
-using Gapotchenko.FX.Diagnostics;
-using Nekres.Music_Mixer.Core.Services.YtDlp;
 
 namespace Nekres.Music_Mixer.Core.Services {
     public class YtDlpService
@@ -196,7 +194,7 @@ namespace Nekres.Music_Mixer.Core.Services {
             var result = string.Empty;
             p.OutputDataReceived += (_, e) =>
             {
-                if (string.IsNullOrEmpty(e.Data) || e.Data.ToLower().StartsWith("error")) {
+                if (string.IsNullOrWhiteSpace(e.Data) || e.Data.ToLower().StartsWith("error")) {
                     return;
                 }
                 result = e.Data;
@@ -222,12 +220,16 @@ namespace Nekres.Music_Mixer.Core.Services {
                 }
             };
 
-            var metaData = new MetaData();
+            string   externalId = string.Empty;
+            string   url        = string.Empty;
+            string   title      = string.Empty;
+            string   uploader   = string.Empty;
+            TimeSpan duration   = TimeSpan.Zero;
 
             int i = 0;
             p.OutputDataReceived += (_, e) =>
             {
-                if (string.IsNullOrEmpty(e.Data)) {
+                if (string.IsNullOrWhiteSpace(e.Data)) {
                     return;
                 }
 
@@ -237,19 +239,20 @@ namespace Nekres.Music_Mixer.Core.Services {
                         if (!id.Success) {
                             return;
                         }
-                        metaData.Id = e.Data;
+                        externalId = e.Data;
                         break;
                     case 1:
-                        metaData.Url = e.Data;
+                        url = e.Data;
                         break;
                     case 2:
-                        metaData.Title = e.Data;
+                        title = e.Data;
                         break;
                     case 3:
-                        metaData.Uploader = e.Data;
+                        uploader = e.Data;
                         break;
                     case 4:
-                        metaData.Duration = TimeSpan.FromSeconds(int.Parse(Regex.Replace(e.Data, "[^0-9]", string.Empty)));
+                        duration = int.TryParse(Regex.Replace(e.Data, "[^0-9]", string.Empty), out var dur) ? 
+                                                TimeSpan.FromSeconds(dur) : TimeSpan.Zero;
                         break;
                     default: break;
                 }
@@ -257,13 +260,12 @@ namespace Nekres.Music_Mixer.Core.Services {
             };
 
             p.ErrorDataReceived += (_, e) => {
-                if (string.IsNullOrEmpty(e.Data)) {
+                if (string.IsNullOrWhiteSpace(e.Data)) {
                     return;
                 }
                 var error = _error.Match(e.Data);
                 if (error.Success) {
-                    metaData = MetaData.Empty;
-                    _logger.Info($"{error.Groups[1].Value}");
+                    _logger.Info($"{error}");
                 }
             };
 
@@ -271,7 +273,7 @@ namespace Nekres.Music_Mixer.Core.Services {
             p.BeginOutputReadLine();
             p.BeginErrorReadLine();
             await p.WaitForExitAsync();
-            return metaData;
+            return new MetaData(externalId, title, url, uploader, duration);
         }
 
         /*
