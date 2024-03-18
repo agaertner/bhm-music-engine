@@ -8,25 +8,28 @@ namespace Nekres.Music_Mixer.Core.Services.Data {
 
         [Flags]
         public enum DayCycle {
-            None     = 0,
-            Dawn     = 1 << 0,
-            Day      = Dawn | 1 << 1,
-            Dusk     = 1 << 2,
-            Night    = Dusk | 1 << 3
+            None = 0,
+            Dawn = 1 << 0,
+            Day = Dawn | 1 << 1,
+            Dusk = 1 << 2,
+            Night = Dusk | 1 << 3
         }
 
-        public static AudioSource Empty = new(){
-            Title      = string.Empty,
-            Uploader   = string.Empty,
+        public static AudioSource Empty = new() {
+            Title = string.Empty,
+            Uploader = string.Empty,
             PageUrl = string.Empty,
-            AudioUrl   = string.Empty,
-            IsEmpty    = true
+            AudioUrl = string.Empty,
+            IsEmpty = true
         };
+
+        public event EventHandler<ValueEventArgs<float>> VolumeChanged;
 
         [BsonIgnore]
         public bool IsEmpty { get; private init; }
 
-        public event EventHandler<ValueEventArgs<float>> VolumeChanged;
+        [BsonIgnore]
+        public Gw2StateService.State State { get; set; }
 
         [BsonField("external_id")]
         public string ExternalId { get; set; }
