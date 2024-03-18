@@ -63,7 +63,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             await TryPlay(source);
         }
 
-        private async Task<bool> TryPlay(AudioSource source, TimeSpan startTime = default) {
+        private async Task<bool> TryPlay(AudioSource source) {
             this.Loading = true;
 
             try {
@@ -72,7 +72,8 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 return await Task.Factory.StartNew(async () => {
 
                     var track = await AudioTrack.TryGetStream(source);
-                    if (track.IsEmpty) {
+                    if (track.IsEmpty || (MusicMixer.Instance?.Gw2State?.CurrentState ?? 0) == Gw2StateService.State.StandBy) {
+                        track.Dispose();
                         return false;
                     }
 
@@ -88,6 +89,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                     this.AudioTrack          =  track;
                     this.AudioTrack.Muted    =  this.Muted;
                     this.AudioTrack.Finished += OnSoundtrackFinished;
+
                     await this.AudioTrack.Play();
 
                     MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
