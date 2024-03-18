@@ -10,6 +10,7 @@ using Microsoft.Xna.Framework.Input;
 using Nekres.Music_Mixer.Core.Services;
 using Nekres.Music_Mixer.Core.Services.Data;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -106,6 +107,8 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 MusicMixer.Instance.Data.Upsert(_playlist);
 
                 AddBgmEntry(source, _tracksPanel);
+
+                GameService.Content.PlaySoundEffectByName("select-skill");
 
             } catch (Exception e) {
 
@@ -238,6 +241,16 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                     Height = 108
                 };
 
+                thumbnail.Click += (_,_) => {
+                    if (string.IsNullOrWhiteSpace(_audioSource.PageUrl)) {
+                        ScreenNotification.ShowNotification("Page Not Found.", ScreenNotification.NotificationType.Error);
+                        GameService.Content.PlaySoundEffectByName("error");
+                    } else {
+                        Process.Start(_audioSource.PageUrl);
+                        GameService.Content.PlaySoundEffectByName("open-skill-slot");
+                    }
+                };
+
                 var durationStr = _audioSource.Duration.ToShortForm();
                 var size = LabelUtil.GetLabelSize(ContentService.FontSize.Size14, durationStr);
                 var duration = new FormattedLabelBuilder().SetWidth(size.X + Panel.RIGHT_PADDING).SetHeight(size.Y + 4)
@@ -254,7 +267,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                     Parent = slidePanel,
                     Width = 32,
                     Height = 32,
-                    Right = slidePanel.ContentRegion.Width - Panel.RIGHT_PADDING,
+                    Right = slidePanel.ContentRegion.Width - Panel.RIGHT_PADDING - 13 /*SCROLLBAR_WIDTH*/,
                     Top = thumbnail.Top,
                     Texture = GameService.Content.DatAssetCache.GetTextureFromAssetId(156012),
                     BasicTooltipText = "Remove from Playlist"
@@ -269,16 +282,20 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 };
 
                 delBttn.Click += (_, _) => {
+                    GameService.Content.PlaySoundEffectByName("button-click");
+
                     delBttn.Texture = GameService.Content.DatAssetCache.GetTextureFromAssetId(156012);
 
                     slidePanel.SlideOut(buildPanel.Dispose);
+
+                    GameService.Content.PlaySoundEffectByName("window-close");
 
                     OnDeleted?.Invoke(this, EventArgs.Empty);
                 };
 
                 var title = new FormattedLabelBuilder().SetWidth(slidePanel.ContentRegion.Width -
                                                                  thumbnail.Right - delBttn.Width -
-                                                                 Panel.RIGHT_PADDING - Control.ControlStandard.ControlOffset.X * 3)
+                                                                 Panel.RIGHT_PADDING - 13 - Control.ControlStandard.ControlOffset.X * 3)
                                                        .SetHeight(thumbnail.Height)
                                                        .SetVerticalAlignment(VerticalAlignment.Top)
                                                        .CreatePart(_audioSource.Title, o => {
@@ -288,7 +305,10 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                                                                o.SetLink(() => ScreenNotification.ShowNotification("Page Not Found.", ScreenNotification.NotificationType.Error));
                                                                GameService.Content.PlaySoundEffectByName("error");
                                                            } else {
-                                                               o.SetHyperLink(_audioSource.PageUrl);
+                                                               o.SetLink(() => {
+                                                                   Process.Start(_audioSource.PageUrl);
+                                                                   GameService.Content.PlaySoundEffectByName("open-skill-slot");
+                                                               });
                                                            }}).Wrap().CreatePart($"\n{_audioSource.Uploader}", o => { 
                                                             o.SetFontSize(ContentService.FontSize.Size16);
                                                        }).Build();
