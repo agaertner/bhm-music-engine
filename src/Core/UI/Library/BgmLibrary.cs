@@ -107,6 +107,8 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
 
                 AddBgmEntry(source, _tracksPanel);
 
+                GameService.Content.PlaySoundEffectByName("select-skill");
+
             } catch (Exception e) {
 
                 ScreenNotification.ShowNotification("Something went wrong. Please try again.", ScreenNotification.NotificationType.Error);
@@ -254,7 +256,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                     Parent = slidePanel,
                     Width = 32,
                     Height = 32,
-                    Right = slidePanel.ContentRegion.Width - Panel.RIGHT_PADDING,
+                    Right = slidePanel.ContentRegion.Width - Panel.RIGHT_PADDING - 13 /*SCROLLBAR_WIDTH*/,
                     Top = thumbnail.Top,
                     Texture = GameService.Content.DatAssetCache.GetTextureFromAssetId(156012),
                     BasicTooltipText = "Remove from Playlist"
@@ -269,9 +271,13 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 };
 
                 delBttn.Click += (_, _) => {
+                    GameService.Content.PlaySoundEffectByName("button-click");
+
                     delBttn.Texture = GameService.Content.DatAssetCache.GetTextureFromAssetId(156012);
 
                     slidePanel.SlideOut(buildPanel.Dispose);
+
+                    GameService.Content.PlaySoundEffectByName("window-close");
 
                     OnDeleted?.Invoke(this, EventArgs.Empty);
                 };
