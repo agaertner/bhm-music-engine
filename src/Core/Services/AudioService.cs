@@ -46,7 +46,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         public async Task Play(AudioSource source) {
-            if (this.Loading || source == null) {
+            if (this.Loading || source == null || source.IsEmpty) {
                 return;
             }
 
@@ -72,7 +72,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 return await Task.Factory.StartNew(async () => {
 
                     var track = await AudioTrack.TryGetStream(source);
-                    if (track.IsEmpty || (MusicMixer.Instance?.Gw2State?.CurrentState ?? 0) == Gw2StateService.State.StandBy) {
+                    if (track.IsEmpty || source.State != (MusicMixer.Instance?.Gw2State?.CurrentState ?? 0)) {
                         track.Dispose();
                         return false;
                     }
@@ -209,6 +209,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
         private async Task ChangeContext(Gw2StateService.State state) {
             var dayCycle = (int)MusicMixer.Instance.Gw2State.TyrianTime;
+            var audio = AudioSource.Empty;
             switch (state) {
                 case Gw2StateService.State.Mounted:
 
@@ -220,7 +221,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                         return;
                     }
 
-                    await Play(context.GetRandom(dayCycle));
+                    audio = context.GetRandom(dayCycle);
                     break;
                 case Gw2StateService.State.Defeated:
                     if (!MusicMixer.Instance.Data.GetDefeatedPlaylist(out var context2)) {
@@ -231,10 +232,13 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                         return;
                     }
 
-                    await Play(context2.GetRandom(dayCycle));
+                    audio = context2.GetRandom(dayCycle);
                     break;
                 default: break;
             }
+
+            audio.State = state;
+            await Play(audio);
         }
 
         private void OnIsSubmergedChanged(object o, ValueEventArgs<bool> e) {
