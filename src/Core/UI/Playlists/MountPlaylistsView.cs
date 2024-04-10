@@ -67,8 +67,6 @@ namespace Nekres.Music_Mixer.Core.UI.Playlists {
 
                 mountItem.Click += (_, _) => {
 
-                    MusicMixer.Instance.Resources.PlayMenuItemClick();
-
                     if (!MusicMixer.Instance.Data.GetMountPlaylist(mountType, out var context)) {
                         context = new Playlist {
                             ExternalId = mountType.ToString(),
