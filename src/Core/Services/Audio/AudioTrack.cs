@@ -26,7 +26,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 _muted = value;
 
                 if (_volumeProvider != null) {
-                    _volumeProvider.Volume = value ? 0 : Source.Volume;
+                    _volumeProvider.Volume = value ? 0 : AudioUtil.GetNormalizedVolume(Source.Volume);
                 }
             }
         }
@@ -62,7 +62,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             _endOfStream.Ended += OnEndOfStreamReached;
 
             _volumeProvider = new SubmergedVolumeProvider(_endOfStream) {
-                Volume = Source.Volume
+                Volume = AudioUtil.GetNormalizedVolume(Source.Volume)
             };
             Source.VolumeChanged += OnVolumeChanged;
 
