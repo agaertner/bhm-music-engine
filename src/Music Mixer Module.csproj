@@ -67,7 +67,6 @@
     <Compile Include="Core\Services\Audio\Source\SubmergedVolumeProvider.cs" />
     <Compile Include="Core\Services\Data\Playlist.cs" />
     <Compile Include="Core\Services\Data\DbEntity.cs" />
-    <Compile Include="Core\Services\ResourceService.cs" />
     <Compile Include="Core\UI\Library\BgmLibrary.cs" />
     <Compile Include="Core\UI\Playlists\MountPlaylistsView.cs" />
     <Compile Include="Core\Utils\AudioUtil.cs" />

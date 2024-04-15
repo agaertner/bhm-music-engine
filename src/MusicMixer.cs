@@ -39,7 +39,6 @@ namespace Nekres.Music_Mixer {
 
         public string ModuleDirectory { get; private set; }
 
-        internal ResourceService Resources;
         internal YtDlpService    YtDlp;
         internal AudioService    Audio;
         internal DataService     Data;
@@ -72,7 +71,6 @@ namespace Nekres.Music_Mixer {
         {
             ModuleDirectory = DirectoriesManager.GetFullDirectoryPath("music_mixer");
 
-            Resources       = new ResourceService();
             YtDlp           = new YtDlpService();
             Data            = new DataService();
             Gw2State        = new Gw2StateService();
@@ -182,7 +180,6 @@ namespace Nekres.Music_Mixer {
             Audio?.Dispose();
             Gw2State?.Dispose();
             Data?.Dispose();
-            Resources?.Dispose();
 
             _cornerTexture?.Dispose();
             _defeatedIcon?.Dispose();

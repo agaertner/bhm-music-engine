@@ -13,7 +13,8 @@ namespace Nekres.Music_Mixer {
         private static List<SimpleAudioVolume> _volumes;
 
         public static float GetNormalizedVolume(float volume) {
-            var masterVolume = MathHelper.Clamp(MusicMixer.Instance.MasterVolume.Value / 1000f, 0f, 1f);
+            
+            var masterVolume = MathHelper.Clamp(Math.Min(GameService.GameIntegration.Audio.Volume, MusicMixer.Instance.MasterVolume.Value / 1000), 0f, 1f);
             if (volume >= masterVolume) {
                 return masterVolume;
             }
