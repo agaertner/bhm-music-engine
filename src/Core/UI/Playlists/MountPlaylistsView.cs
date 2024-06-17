@@ -3,6 +3,7 @@ using Blish_HUD.Graphics.UI;
 using Microsoft.Xna.Framework.Graphics;
 using Nekres.Music_Mixer.Core.Services.Data;
 using Nekres.Music_Mixer.Core.UI.Library;
+using Nekres.Music_Mixer.Properties;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,7 +38,7 @@ namespace Nekres.Music_Mixer.Core.UI.Playlists {
                 Parent = buildPanel,
                 Width  = 150,
                 Height = buildPanel.ContentRegion.Height,
-                Title  = "Playlists"
+                Title  = Resources.Playlists
             };
 
             var menu = new Menu {

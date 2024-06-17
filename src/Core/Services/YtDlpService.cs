@@ -187,7 +187,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                     FileName = _executablePath,
                     Arguments = string.Format("-g {0} -f \"bestaudio[ext=m4a][abr<={1}]/bestaudio[ext=aac][abr<={1}]/bestaudio[abr<={1}]/bestaudio\" {2}", 
                                               link, 
-                                              MusicMixer.Instance.AverageBitrate.Value.ToString().Substring(1), 
+                                              MusicMixer.Instance.ModuleConfig.Value.AverageBitrate.ToString().Substring(1), 
                                               _globalYtDlpArgs)
                 }
             };

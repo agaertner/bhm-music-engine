@@ -1,5 +1,6 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Controls;
+using Blish_HUD.Graphics.UI;
 using Blish_HUD.Input;
 using Blish_HUD.Modules;
 using Blish_HUD.Modules.Managers;
@@ -11,6 +12,8 @@ using Nekres.Music_Mixer.Core.Services.Audio;
 using Nekres.Music_Mixer.Core.Services.Data;
 using Nekres.Music_Mixer.Core.UI.Library;
 using Nekres.Music_Mixer.Core.UI.Playlists;
+using Nekres.Music_Mixer.Core.UI.Settings;
+using Nekres.Music_Mixer.Properties;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -33,9 +36,7 @@ namespace Nekres.Music_Mixer {
 
         #endregion
 
-        internal SettingEntry<float>                     MasterVolume;
-        internal SettingEntry<YtDlpService.AudioBitrate> AverageBitrate;
-        internal SettingEntry<bool>                      MuteWhenInBackground;
+        internal SettingEntry<ModuleConfig> ModuleConfig;
 
         public string ModuleDirectory { get; private set; }
 
@@ -56,20 +57,12 @@ namespace Nekres.Music_Mixer {
         public MusicMixer([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters) { Instance = this; }
 
         protected override void DefineSettings(SettingCollection settings) {
-            var audio = settings.AddSubCollection("audio", true, () => "Sound Options");
-            MasterVolume = audio.DefineSetting("master_volume", 50f,
-                                              () => "Master Volume",
-                                              () => "Sets the audio volume.");
-            MuteWhenInBackground = audio.DefineSetting("mute_in_background", false,
-                                                       () => "Mute when GW2 is in the background");
-            AverageBitrate = audio.DefineSetting("average_bitrate", YtDlpService.AudioBitrate.B320, 
-                                                 () => "Average bitrate limit",
-                                                 () => "Sets the average bitrate of the audio used in streaming.");
+            settings.RenderInUi = false;
+            ModuleConfig = settings.DefineSetting("module_config", Core.UI.Settings.ModuleConfig.Default);
         }
 
-        protected override void Initialize()
-        {
-            ModuleDirectory = DirectoriesManager.GetFullDirectoryPath("music_mixer");
+        protected override void Initialize() {
+            ModuleDirectory  = DirectoriesManager.GetFullDirectoryPath("music_mixer");
 
             YtDlp           = new YtDlpService();
             Data            = new DataService();
@@ -93,6 +86,10 @@ namespace Nekres.Music_Mixer {
             _cornerIcon.LoadingMessage = loadingMessage;
         }
 
+        public override IView GetSettingsView() {
+            return new ModuleSettingsView(this.ModuleConfig.Value);
+        }
+
         protected override async Task LoadAsync() {
             await YtDlp.Update(GetModuleProgressHandler());
         }
@@ -105,7 +102,7 @@ namespace Nekres.Music_Mixer {
             YtDlp.RemoveCache();    // ..from cache.
             Data.RemoveAudioUrls(); // ..from database.
 
-            MasterVolume.Value = MathHelper.Clamp(MasterVolume.Value, 0f, 100f);
+            ModuleConfig.Value.MasterVolume = MathHelper.Clamp(ModuleConfig.Value.MasterVolume, 0f, 100f);
 
             _cornerTexture = ContentsManager.GetTexture("corner_icon.png");
             var windowRegion = new Rectangle(40, 26, 913, 691);
@@ -113,9 +110,9 @@ namespace Nekres.Music_Mixer {
                                               windowRegion,
                                               new Rectangle(100, 36, 839, 605)) {
                 Parent        = GameService.Graphics.SpriteScreen,
-                Title         = "Background Music",
+                Title         = Resources.Background_Music,
                 Emblem        = _cornerTexture,
-                Subtitle      = "Mounted",
+                Subtitle      = Resources.Mounted,
                 SavesPosition = true,
                 Id            = $"{nameof(MusicMixer)}_d42b52ce-74f1-4e6d-ae6b-a8724029f0a3",
                 Left          = (GameService.Graphics.SpriteScreen.Width  - windowRegion.Width) / 2,
@@ -123,7 +120,7 @@ namespace Nekres.Music_Mixer {
             };
 
             _mountTabIcon = ContentsManager.GetTexture("tabs/raptor.png");
-            var mountTab = new Tab(_mountTabIcon, () => new MountPlaylistsView(), "Mounted");
+            var mountTab = new Tab(_mountTabIcon, () => new MountPlaylistsView(), Resources.Mounted);
             _moduleWindow.Tabs.Add(mountTab);
 
             _defeatedIcon = ContentsManager.GetTexture("tabs/downed_enemy.png");
@@ -134,8 +131,8 @@ namespace Nekres.Music_Mixer {
                         Tracks     = new List<AudioSource>()
                     };
                 }
-                return new BgmLibraryView(context, "Defeated");
-            }, "Defeated");
+                return new BgmLibraryView(context, Resources.Defeated);
+            }, Resources.Defeated);
             _moduleWindow.Tabs.Add(defeatedTab);
 
             _cornerIcon = new CornerIcon
