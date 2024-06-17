@@ -44,7 +44,9 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         private readonly BiQuadFilterSource      _lowPassFilter; // Submerged SFX
         private readonly Equalizer               _equalizer;
 
-        private bool _initialized;
+        private bool     _initialized;
+        private bool     _customDevice;
+        private MMDevice _device;
 
         private AudioTrack() {
             IsEmpty = true;
@@ -54,7 +56,19 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         {
             Source = source;
 
-            _outputDevice  = new WasapiOut(GameService.GameIntegration.Audio.AudioDevice, AudioClientShareMode.Shared, false, 100);
+            _device = GameService.GameIntegration.Audio.AudioDevice;
+
+            if (MusicMixer.Instance.ModuleConfig.Value.UseCustomOutputDevice) {
+                if (!string.IsNullOrWhiteSpace(MusicMixer.Instance.ModuleConfig.Value.OutputDevice)) {
+                    var customDevice = AudioUtil.GetWasApiOutputDeviceById(MusicMixer.Instance.ModuleConfig.Value.OutputDevice);
+                    if (customDevice != null) {
+                        _device       = customDevice;
+                        _customDevice = true;
+                    }
+                }
+            }
+
+            _outputDevice  = new WasapiOut(_device, AudioClientShareMode.Shared, false, 100);
             _mediaProvider = new MediaFoundationReader(Source.AudioUrl);
             
 
@@ -250,6 +264,9 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             try {
                 _outputDevice?.Dispose();
                 _mediaProvider?.Dispose();
+                if (_customDevice) {
+                    _device?.Dispose();
+                }
             } catch (Exception e) when (e is NullReferenceException or ObjectDisposedException) {
                 /* NOOP - Module was unloaded */
             }

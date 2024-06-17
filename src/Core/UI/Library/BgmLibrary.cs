@@ -13,6 +13,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Nekres.Music_Mixer.Properties;
 
 namespace Nekres.Music_Mixer.Core.UI.Library {
     public class BgmLibraryView : View {
@@ -52,7 +53,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
 
         private async Task FindAdd() {
             if (_checkingLink) {
-                ScreenNotification.ShowNotification("Checking link… (Please wait.)", ScreenNotification.NotificationType.Warning);
+                ScreenNotification.ShowNotification($"{Resources.Checking_link___} ({Resources.Please_wait_})", ScreenNotification.NotificationType.Warning);
                 GameService.Content.PlaySoundEffectByName("button-click");
                 return;
             }
@@ -68,18 +69,18 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                     return;
                 }
 
-                ScreenNotification.ShowNotification("Link pasted. Checking… (Please wait.)");
+                ScreenNotification.ShowNotification($"{Resources.Link_pasted__Checking___} ({Resources.Please_wait_})");
 
                 var data = await MusicMixer.Instance.YtDlp.GetMetaData(url);
 
                 if (data.IsError) {
-                    ScreenNotification.ShowNotification("Unsupported website.", ScreenNotification.NotificationType.Error);
+                    ScreenNotification.ShowNotification(Resources.Unsupported_website_, ScreenNotification.NotificationType.Error);
                     GameService.Content.PlaySoundEffectByName("error");
                     return;
                 }
 
                 if (_playlist.Tracks.Any(track => string.Equals(track.ExternalId, data.Id))) {
-                    ScreenNotification.ShowNotification("This track is already in the playlist.", ScreenNotification.NotificationType.Error);
+                    ScreenNotification.ShowNotification(Resources.This_track_is_already_in_the_playlist_, ScreenNotification.NotificationType.Error);
                     GameService.Content.PlaySoundEffectByName("error");
                     return;
                 }
@@ -97,7 +98,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                     };
 
                     if (!MusicMixer.Instance.Data.Upsert(source)) {
-                        ScreenNotification.ShowNotification("Something went wrong. Please try again.", ScreenNotification.NotificationType.Error);
+                        ScreenNotification.ShowNotification(Resources.Something_went_wrong__Please_try_again_, ScreenNotification.NotificationType.Error);
                         GameService.Content.PlaySoundEffectByName("error");
                         return;
                     }
@@ -112,7 +113,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
 
             } catch (Exception e) {
 
-                ScreenNotification.ShowNotification("Something went wrong. Please try again.", ScreenNotification.NotificationType.Error);
+                ScreenNotification.ShowNotification(Resources.Something_went_wrong__Please_try_again_, ScreenNotification.NotificationType.Error);
                 GameService.Content.PlaySoundEffectByName("error");
                 MusicMixer.Logger.Info(e, e.Message);
 
@@ -139,8 +140,8 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 Width = 100,
                 Top = 20,
                 Left = Panel.LEFT_PADDING,
-                Text = "Enabled",
-                BasicTooltipText = "Enable or disable this playlist.",
+                Text = Resources.Enabled,
+                BasicTooltipText = Resources.Enable_or_disable_this_playlist_,
                 Checked = _playlist.Enabled
             };
 
@@ -148,7 +149,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 _playlist.Enabled = e.Checked;
 
                 if (!MusicMixer.Instance.Data.Upsert(_playlist)) {
-                    ScreenNotification.ShowNotification("Something went wrong. Please try again.", ScreenNotification.NotificationType.Error);
+                    ScreenNotification.ShowNotification(Resources.Something_went_wrong__Please_try_again_, ScreenNotification.NotificationType.Error);
                     GameService.Content.PlaySoundEffectByName("error");
                     return;
                 }
@@ -179,13 +180,13 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
             };
 
             var addBttn = new StandardButton {
-                Parent = buildPanel,
-                Width = _tracksPanel.Width,
-                Height = 32,
-                Top = _tracksPanel.Bottom + Panel.BOTTOM_PADDING,
-                Left = _tracksPanel.Left,
-                Text = $"Paste From Clipboard [{_pasteShortcut.GetBindingDisplayText()}]",
-                BasicTooltipText = "Paste a video or audio link from your clipboard to add it to the playlist.\nRecommended platforms: SoundCloud, YouTube.",
+                Parent           = buildPanel,
+                Width            = _tracksPanel.Width,
+                Height           = 32,
+                Top              = _tracksPanel.Bottom + Panel.BOTTOM_PADDING,
+                Left             = _tracksPanel.Left,
+                Text             = $"{Resources.Paste_From_Clipboard} [{_pasteShortcut.GetBindingDisplayText()}]",
+                BasicTooltipText = string.Format("{0}\n{1} {2}", Resources.Paste_a_video_or_audio_link_from_your_clipboard_to_add_it_to_the_playlist_, Resources.Recommended_platforms_, "SoundCloud, YouTube.")
             };
 
             foreach (var track in _playlist.Tracks) {
@@ -209,7 +210,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 _playlist.Tracks.Remove(source);
 
                 if (!MusicMixer.Instance.Data.Upsert(_playlist)) {
-                    ScreenNotification.ShowNotification("Something went wrong. Please try again.", ScreenNotification.NotificationType.Error);
+                    ScreenNotification.ShowNotification(Resources.Something_went_wrong__Please_try_again_, ScreenNotification.NotificationType.Error);
                     GameService.Content.PlaySoundEffectByName("error");
                 };
             };
@@ -243,7 +244,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
 
                 thumbnail.Click += (_,_) => {
                     if (string.IsNullOrWhiteSpace(_audioSource.PageUrl)) {
-                        ScreenNotification.ShowNotification("Page Not Found.", ScreenNotification.NotificationType.Error);
+                        ScreenNotification.ShowNotification(Resources.Page_Not_Found_, ScreenNotification.NotificationType.Error);
                         GameService.Content.PlaySoundEffectByName("error");
                     } else {
                         Process.Start(_audioSource.PageUrl);
@@ -270,7 +271,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                     Right = slidePanel.ContentRegion.Width - Panel.RIGHT_PADDING - 13 /*SCROLLBAR_WIDTH*/,
                     Top = thumbnail.Top,
                     Texture = GameService.Content.DatAssetCache.GetTextureFromAssetId(156012),
-                    BasicTooltipText = "Remove from Playlist"
+                    BasicTooltipText = Resources.Remove_from_Playlist
                 };
 
                 delBttn.MouseEntered += (_, _) => {
@@ -302,7 +303,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                                                            o.SetFontSize(ContentService.FontSize.Size20);
                                                            o.MakeBold();
                                                            if (string.IsNullOrWhiteSpace(_audioSource.PageUrl)) {
-                                                               o.SetLink(() => ScreenNotification.ShowNotification("Page Not Found.", ScreenNotification.NotificationType.Error));
+                                                               o.SetLink(() => ScreenNotification.ShowNotification(Resources.Page_Not_Found_, ScreenNotification.NotificationType.Error));
                                                                GameService.Content.PlaySoundEffectByName("error");
                                                            } else {
                                                                o.SetLink(() => {
@@ -330,10 +331,10 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 foreach (var cycle in Enum.GetValues(typeof(AudioSource.DayCycle)).Cast<AudioSource.DayCycle>().Skip(1)
                                           .Except(new[] { AudioSource.DayCycle.Dawn, AudioSource.DayCycle.Dusk })) {
                     var cb = new Checkbox {
-                        Parent = cyclesPanel,
-                        Width = 100,
-                        Height = 32,
-                        Text = cycle.ToString(),
+                        Parent  = cyclesPanel,
+                        Width   = 100,
+                        Height  = 32,
+                        Text    = cycle == AudioSource.DayCycle.Day ? Resources.Day : Resources.Night,
                         Checked = _audioSource.HasDayCycle(cycle)
                     };
 
@@ -356,7 +357,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                         if (!MusicMixer.Instance.Data.Upsert(_audioSource)) {
                             _audioSource.DayCycles = oldCycles;
                             cb.GetPrivateField("_checked").SetValue(cb, !e.Checked); // Skip invoking CheckedChanged
-                            ScreenNotification.ShowNotification("Something went wrong. Please try again.", ScreenNotification.NotificationType.Error);
+                            ScreenNotification.ShowNotification(Resources.Something_went_wrong__Please_try_again_, ScreenNotification.NotificationType.Error);
                             GameService.Content.PlaySoundEffectByName("error");
                             return;
                         }

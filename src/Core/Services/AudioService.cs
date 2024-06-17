@@ -172,7 +172,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         private void OnGw2LostFocus(object o, EventArgs e) {
-            if (!MusicMixer.Instance?.MuteWhenInBackground.Value ?? true) {
+            if (!MusicMixer.Instance?.ModuleConfig.Value.MuteWhenInBackground ?? true) {
                 return;
             }
 
