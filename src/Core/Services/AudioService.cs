@@ -3,24 +3,12 @@ using Nekres.Music_Mixer.Core.Services.Data;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Nekres.Music_Mixer.Core.UI.Settings;
 
 namespace Nekres.Music_Mixer.Core.Services.Audio {
     internal class AudioService : IDisposable
     {
         public event EventHandler<ValueEventArgs<AudioSource>> MusicChanged;
-
-        private bool _muted;
-        public bool Muted
-        {
-            get => _muted;
-            set {
-                _muted = value;
-
-                if (!this.AudioTrack.IsEmpty) {
-                    this.AudioTrack.Muted = value;
-                }
-            }
-        }
 
         public AudioTrack AudioTrack { get; private set; }
         public bool       Loading    { get; private set; }
@@ -43,6 +31,12 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             GameService.GameIntegration.Gw2Instance.Gw2LostFocus     += OnGw2LostFocus;
             GameService.GameIntegration.Gw2Instance.Gw2AcquiredFocus += OnGw2AcquiredFocus;
             GameService.GameIntegration.Gw2Instance.Gw2Closed        += OnGw2Closed;
+
+            MusicMixer.Instance.ModuleConfig.SettingChanged += OnModuleConfigChanged;
+        }
+
+        private void OnModuleConfigChanged(object sender, ValueChangedEventArgs<ModuleConfig> e) {
+            AudioTrack?.Invalidate();
         }
 
         public async Task Play(AudioSource source) {
@@ -72,7 +66,10 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 return await Task.Factory.StartNew(async () => {
 
                     var track = await AudioTrack.TryGetStream(source);
-                    if (track.IsEmpty || source.State != (MusicMixer.Instance?.Gw2State?.CurrentState ?? 0)) {
+
+                    if (track.IsEmpty || MusicMixer.Instance == null 
+                                      || MusicMixer.Instance.Gw2State == null 
+                                      || source.State != MusicMixer.Instance.Gw2State.CurrentState) {
                         track.Dispose();
                         return false;
                     }
@@ -87,7 +84,6 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                     }
 
                     this.AudioTrack          =  track;
-                    this.AudioTrack.Muted    =  this.Muted;
                     this.AudioTrack.Finished += OnSoundtrackFinished;
 
                     await this.AudioTrack.Play();
@@ -157,6 +153,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         public void Dispose() {
+            MusicMixer.Instance.ModuleConfig.SettingChanged          -= OnModuleConfigChanged;
             MusicMixer.Instance.Gw2State.IsSubmergedChanged          -= OnIsSubmergedChanged;
             MusicMixer.Instance.Gw2State.StateChanged                -= OnStateChanged;
             GameService.GameIntegration.Gw2Instance.Gw2LostFocus     -= OnGw2LostFocus;
