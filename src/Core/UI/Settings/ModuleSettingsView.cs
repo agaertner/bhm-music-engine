@@ -71,7 +71,6 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
             var inputDevice = new KeyValueDropdown<string> {
                 Parent           = flowPanel,
                 PlaceholderText  = Resources.Select_an_output_device___,
-                SelectedItem     = _config.OutputDevice,
                 BasicTooltipText = Resources.Select_an_output_device___,
                 Enabled          = _config.UseCustomOutputDevice
             };
@@ -79,6 +78,7 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
             foreach (var device in AudioUtil.WasApiOutputDevices) {
                 inputDevice.AddItem(device.Id, device.FriendlyName);
             }
+            inputDevice.SelectedItem = _config.OutputDevice;
 
             cbx.CheckedChanged += (_, e) => {
                 _config.UseCustomOutputDevice = e.Checked;
@@ -86,7 +86,7 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
             };
 
             inputDevice.ValueChanged += (_, e) => {
-                _config.OutputDevice = inputDevice.SelectedItem;
+                _config.OutputDevice = e.NewValue;
             };
 
             base.Build(buildPanel);
@@ -113,13 +113,16 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
                 label.Text          = _displayText;
 
                 var trackBar = new TrackBar();
-                trackBar.Size   = new Point(277, 16);
-                trackBar.Left   = label.Right + Panel.LEFT_PADDING;
-                trackBar.Parent = buildPanel;
-                trackBar.Value  = _value;
+                trackBar.Size     = new Point(277, 16);
+                trackBar.Left     = label.Right + Panel.LEFT_PADDING;
+                trackBar.Parent   = buildPanel;
+                trackBar.Value    = _value;
+                trackBar.MaxValue = 200;
 
-                trackBar.ValueChanged += (_, e) => {
-                    ValueChanged?.Invoke(this, new ValueEventArgs<float>(trackBar.Value));
+                trackBar.IsDraggingChanged += (_, e) => {
+                    if (!e.Value) {
+                        ValueChanged?.Invoke(this, new ValueEventArgs<float>(trackBar.Value));
+                    }
                 };
 
                 base.Build(buildPanel);

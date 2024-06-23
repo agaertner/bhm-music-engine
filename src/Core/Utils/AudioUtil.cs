@@ -14,9 +14,7 @@ namespace Nekres.Music_Mixer {
         private static Glide.Tween             _animEase;
         private static List<SimpleAudioVolume> _volumes;
 
-        public static float GetNormalizedVolume(float volume) {
-            
-            var masterVolume = MathHelper.Clamp(Math.Min(GameService.GameIntegration.Audio.Volume, MusicMixer.Instance.ModuleConfig.Value.MasterVolume / 1000), 0f, 1f);
+        public static float GetNormalizedVolume(float volume, float masterVolume) {
             if (volume >= masterVolume) {
                 return masterVolume;
             }

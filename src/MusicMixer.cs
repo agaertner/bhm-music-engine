@@ -46,12 +46,17 @@ namespace Nekres.Music_Mixer {
         internal Gw2StateService Gw2State;
 
         private TabbedWindow2 _moduleWindow;
-        private CornerIcon _cornerIcon;
+        private CornerIcon    _cornerIcon;
 
         // Textures
         private Texture2D _cornerTexture;
         private Texture2D _mountTabIcon;
         private Texture2D _defeatedIcon;
+
+        private  float _prevMasterVol;
+        internal float MasterVolume => ModuleConfig.Value == null ? _prevMasterVol 
+                                           : _prevMasterVol = MathHelper.Clamp(ModuleConfig.Value.MasterVolume / 1000, 0f, 2f);
+        
 
         [ImportingConstructor]
         public MusicMixer([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters) { Instance = this; }
@@ -102,7 +107,7 @@ namespace Nekres.Music_Mixer {
             YtDlp.RemoveCache();    // ..from cache.
             Data.RemoveAudioUrls(); // ..from database.
 
-            ModuleConfig.Value.MasterVolume = MathHelper.Clamp(ModuleConfig.Value.MasterVolume, 0f, 100f);
+            ModuleConfig.Value.MasterVolume = MathHelper.Clamp(ModuleConfig.Value.MasterVolume, 0f, 200f);
 
             _cornerTexture = ContentsManager.GetTexture("corner_icon.png");
             var windowRegion = new Rectangle(40, 26, 913, 691);

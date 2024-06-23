@@ -18,19 +18,6 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
         public event EventHandler<EventArgs> Finished;
 
-        private bool _muted;
-        public bool Muted
-        {
-            get => _muted;
-            set {
-                _muted = value;
-
-                if (_volumeProvider != null) {
-                    _volumeProvider.Volume = value ? 0 : AudioUtil.GetNormalizedVolume(Source.Volume);
-                }
-            }
-        }
-
         public readonly AudioSource Source;
         public          TimeSpan    CurrentTime => _mediaProvider.CurrentTime;
         public          TimeSpan    TotalTime   => _mediaProvider.TotalTime;
@@ -68,7 +55,10 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 }
             }
 
-            _outputDevice  = new WasapiOut(_device, AudioClientShareMode.Shared, false, 100);
+            _outputDevice  = new WasapiOut(_device, AudioClientShareMode.Shared, false, 100) {
+                Volume = 1
+            };
+
             _mediaProvider = new MediaFoundationReader(Source.AudioUrl);
             
 
@@ -76,7 +66,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             _endOfStream.Ended += OnEndOfStreamReached;
 
             _volumeProvider = new SubmergedVolumeProvider(_endOfStream) {
-                Volume = AudioUtil.GetNormalizedVolume(Source.Volume)
+                Volume = AudioUtil.GetNormalizedVolume(Source.Volume, MusicMixer.Instance.MasterVolume)
             };
             Source.VolumeChanged += OnVolumeChanged;
 
@@ -173,6 +163,12 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                         logger.Warn(e, e.Message);
                         break;
                 }
+            }
+        }
+
+        public void Invalidate() {
+            if (_volumeProvider != null) {
+                _volumeProvider.Volume = AudioUtil.GetNormalizedVolume(Source.Volume, MusicMixer.Instance.MasterVolume);
             }
         }
 
