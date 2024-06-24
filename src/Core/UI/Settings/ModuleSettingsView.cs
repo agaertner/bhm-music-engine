@@ -45,9 +45,9 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
                 Width  = flowPanel.ContentRegion.Width,
                 Height = 30,
             };
-            var volumeSetting = new NumericConfigView(_config.MasterVolume, Resources.Master_Volume);
+            var volumeSetting = new NumericConfigView(_config.MasterVolume * 100, Resources.Master_Volume);
             volumeSetting.ValueChanged += (_, e) => {
-                _config.MasterVolume = e.Value;
+                _config.MasterVolume = e.Value / 100;
             };
             volumeContainer.Show(volumeSetting);
 

@@ -54,8 +54,7 @@ namespace Nekres.Music_Mixer {
         private Texture2D _defeatedIcon;
 
         private  float _prevMasterVol;
-        internal float MasterVolume => ModuleConfig.Value == null ? _prevMasterVol 
-                                           : _prevMasterVol = MathHelper.Clamp(ModuleConfig.Value.MasterVolume / 1000, 0f, 2f);
+        internal float MasterVolume => ModuleConfig.Value == null ? _prevMasterVol : _prevMasterVol = ModuleConfig.Value.MasterVolume;
         
 
         [ImportingConstructor]
@@ -107,7 +106,7 @@ namespace Nekres.Music_Mixer {
             YtDlp.RemoveCache();    // ..from cache.
             Data.RemoveAudioUrls(); // ..from database.
 
-            ModuleConfig.Value.MasterVolume = MathHelper.Clamp(ModuleConfig.Value.MasterVolume, 0f, 200f);
+            ModuleConfig.Value.MasterVolume = MathHelper.Clamp(ModuleConfig.Value.MasterVolume, 0f, 2f);
 
             _cornerTexture = ContentsManager.GetTexture("corner_icon.png");
             var windowRegion = new Rectangle(40, 26, 913, 691);
