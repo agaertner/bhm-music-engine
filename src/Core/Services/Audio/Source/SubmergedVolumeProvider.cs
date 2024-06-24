@@ -20,10 +20,8 @@ namespace Nekres.Music_Mixer.Core.Services.Audio.Source {
         public int Read(float[] buffer, int offset, int sampleCount) {
             var volume = GetDepthAdjustedVolume();
             int num = _source.Read(buffer, offset, sampleCount);
-            if (volume != 1.0) {
-                for (int index = 0; index < sampleCount; ++index)
-                    buffer[offset + index] *= volume;
-            }
+            for (int index = 0; index < sampleCount; ++index)
+                buffer[offset + index] *= volume;
             return num;
         }
 
@@ -32,7 +30,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio.Source {
             if (this.Enabled) {
                 return MathHelper.Clamp(Map(GameService.Gw2Mumble.PlayerCamera.Position.Z,
                                             -130, AudioUtil.GetNormalizedVolume(0.1f, MusicMixer.Instance.MasterVolume), 0, 
-                                            normalized), 0f, 0.1f);
+                                            normalized), 0f, normalized);
             }
             return normalized;
         }

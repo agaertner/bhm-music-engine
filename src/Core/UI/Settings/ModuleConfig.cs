@@ -8,7 +8,7 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
         public static ModuleConfig Default = new() {
             _outputDevice = string.Empty,
             _useCustomOutputDevice = false,
-            _masterVolume = 50,
+            _masterVolume = 0.5f,
             _averageBitrate = YtDlpService.AudioBitrate.B320,
             _muteWhenInBackground = true
         };

@@ -55,21 +55,16 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 }
             }
 
-            _outputDevice  = new WasapiOut(_device, AudioClientShareMode.Shared, false, 100) {
-                Volume = 1
-            };
+            _outputDevice = new WasapiOut(_device, AudioClientShareMode.Shared, false, 100);
 
             _mediaProvider = new MediaFoundationReader(Source.AudioUrl);
             
-
             _endOfStream = new EndOfStreamProvider(_mediaProvider);
             _endOfStream.Ended += OnEndOfStreamReached;
 
-            _volumeProvider = new SubmergedVolumeProvider(_endOfStream) {
-                Volume = AudioUtil.GetNormalizedVolume(Source.Volume, MusicMixer.Instance.MasterVolume)
-            };
+            _volumeProvider      =  new SubmergedVolumeProvider(_endOfStream);
             Source.VolumeChanged += OnVolumeChanged;
-
+            
             _fadeInOut = new FadeInOutSampleProvider(_volumeProvider);
 
             // Filter is toggled when submerged.
@@ -78,6 +73,8 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 Filter = new LowPassFilter(_fadeInOut.WaveFormat.SampleRate, 400)
             };
             _equalizer = Equalizer.Create10BandEqualizer(_lowPassFilter);
+
+            Invalidate();
         }
 
         public static async Task<AudioTrack> TryGetStream(AudioSource source, int retries = 3, int delayMs = 500, Logger logger = null)
@@ -168,7 +165,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
         public void Invalidate() {
             if (_volumeProvider != null) {
-                _volumeProvider.Volume = AudioUtil.GetNormalizedVolume(Source.Volume, MusicMixer.Instance.MasterVolume);
+                _volumeProvider.Volume = AudioUtil.GetNormalizedVolume(Source.Volume * 2, MusicMixer.Instance.MasterVolume);
             }
         }
 
@@ -269,7 +266,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         private void OnVolumeChanged(object sender, ValueEventArgs<float> e) {
-            _volumeProvider.Volume = e.Value;
+            Invalidate();
         }
 
         private void OnEndOfStreamReached(object o, EventArgs e) {

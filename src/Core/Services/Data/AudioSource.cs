@@ -48,6 +48,7 @@ namespace Nekres.Music_Mixer.Core.Services.Data {
 
         private float _volume;
         [BsonField("volume")]
+        //TODO: Not implemented. Always 1. Implement volume slider per track in interface.
         public float Volume {
             get => _volume;
             set {
