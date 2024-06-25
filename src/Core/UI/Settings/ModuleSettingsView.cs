@@ -116,8 +116,8 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
                 trackBar.Size     = new Point(277, 16);
                 trackBar.Left     = label.Right + Panel.LEFT_PADDING;
                 trackBar.Parent   = buildPanel;
-                trackBar.Value    = _value;
                 trackBar.MaxValue = 200;
+                trackBar.Value    = _value;
 
                 trackBar.IsDraggingChanged += (_, e) => {
                     if (!e.Value) {
