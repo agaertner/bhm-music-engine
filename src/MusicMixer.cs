@@ -76,6 +76,12 @@ namespace Nekres.Music_Mixer {
 
         protected override void Update(GameTime gameTime) {
             this.Gw2State.Update();
+
+            if (GameService.GameIntegration.Audio.Volume == 0) {
+                this.Audio?.Pause();
+            } else {
+                this.Audio?.Resume();
+            }
         }
 
         public IProgress<string> GetModuleProgressHandler() {
