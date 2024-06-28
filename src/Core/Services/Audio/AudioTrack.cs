@@ -31,6 +31,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         private readonly BiQuadFilterSource      _lowPassFilter; // Submerged SFX
         private readonly Equalizer               _equalizer;
 
+        private bool     _disposing;
         private bool     _initialized;
         private bool     _customDevice;
         private MMDevice _device;
@@ -164,14 +165,14 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         public void Invalidate() {
-            if (_volumeProvider != null) {
+            if (IsEmpty || _disposing || _volumeProvider != null) {
                 _volumeProvider.Volume = AudioUtil.GetNormalizedVolume(Source.Volume * 2, MusicMixer.Instance.MasterVolume);
             }
         }
 
         public void Seek(float seconds)
         {
-            if (IsEmpty) {
+            if (IsEmpty || _disposing) {
                 return;
             }
 
@@ -180,7 +181,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
         public void Seek(TimeSpan timespan)
         {
-            if (IsEmpty) {
+            if (IsEmpty || _disposing) {
                 return;
             }
 
@@ -189,11 +190,10 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
         public void Pause()
         {
-            if (IsEmpty) {
-                return;
-            }
-
-            if (_outputDevice == null || _outputDevice.PlaybackState == PlaybackState.Paused) {
+            if (IsEmpty 
+             || _disposing
+             || _outputDevice == null 
+             || _outputDevice.PlaybackState == PlaybackState.Paused) {
                 return;
             }
 
@@ -202,11 +202,10 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
         public void Resume()
         {
-            if (IsEmpty) {
-                return;
-            }
-
-            if (_outputDevice == null || _outputDevice.PlaybackState != PlaybackState.Paused) {
+            if (IsEmpty 
+             || _disposing 
+             || _outputDevice == null 
+             || _outputDevice.PlaybackState != PlaybackState.Paused) {
                 return;
             }
 
@@ -215,11 +214,9 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
         public void ToggleSubmergedFx(bool enable)
         {
-            if (IsEmpty) {
-                return;
-            }
-
-            if (_equalizer == null) {
+            if (IsEmpty 
+             || _disposing 
+             || _equalizer == null) {
                 return;
             }
 
@@ -229,8 +226,9 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             _equalizer.SampleFilters[9].AverageGainDB = enable ? 13.4f : 0; // Treble
         }
 
-        public void Dispose()
-        {
+        public void Dispose() {
+            _disposing = true;
+
             if (IsEmpty) {
                 return;
             }
@@ -240,6 +238,8 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         public async Task DisposeAsync() {
+            _disposing = true;
+
             if (IsEmpty) {
                 return;
             }
