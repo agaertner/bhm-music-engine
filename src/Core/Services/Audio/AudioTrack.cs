@@ -165,9 +165,10 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         public void Invalidate() {
-            if (IsEmpty || _disposing || _volumeProvider != null) {
-                _volumeProvider.Volume = AudioUtil.GetNormalizedVolume(Source.Volume * 2, MusicMixer.Instance.MasterVolume);
+            if (IsEmpty || _disposing || _volumeProvider == null || Source == null) {
+                return;
             }
+            _volumeProvider.Volume = AudioUtil.GetNormalizedVolume(Source.Volume * 2, MusicMixer.Instance.MasterVolume);
         }
 
         public void Seek(float seconds)
