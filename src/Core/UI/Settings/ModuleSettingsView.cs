@@ -6,6 +6,7 @@ using Nekres.Music_Mixer.Core.Services;
 using Nekres.Music_Mixer.Core.UI.Controls;
 using Nekres.Music_Mixer.Properties;
 using System;
+using System.IO;
 using System.Linq;
 
 namespace Nekres.Music_Mixer.Core.UI.Settings {
@@ -87,6 +88,19 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
 
             inputDevice.ValueChanged += (_, e) => {
                 _config.OutputDevice = e.NewValue;
+            };
+
+            var defaultBttn = new StandardButton {
+                Parent = flowPanel,
+                Width  = 100,
+                Height = 50,
+                Text   = "Download Defaults"
+            };
+
+            defaultBttn.Click += (_, e) => {
+                var dest = Path.Combine(MusicMixer.Instance.ModuleDirectory, "default_music.db");
+                MusicMixer.Instance.Data.DownloadRemote("https://raw.githubusercontent.com/agaertner/bhm-music-engine/main/raw/default_music.db", dest);
+                MusicMixer.Instance.Data.MergeRemote(dest);
             };
 
             base.Build(buildPanel);
