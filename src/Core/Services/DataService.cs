@@ -1,12 +1,15 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Content;
+using Blish_HUD.Controls;
 using LiteDB;
 using Microsoft.Xna.Framework.Graphics;
 using Nekres.Music_Mixer.Core.Services.Data;
+using Nekres.Music_Mixer.Properties;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using Image = SixLabors.ImageSharp.Image;
@@ -33,6 +36,82 @@ namespace Nekres.Music_Mixer.Core.Services {
                 Filename   = Path.Combine(MusicMixer.Instance.ModuleDirectory, LITEDB_FILENAME),
                 Connection = ConnectionType.Shared
             };
+        }
+
+        public void DownloadRemote(string url, string destination) {
+            var client = new WebClient();
+            client.OpenReadAsync(new Uri(url));
+
+            client.OpenReadCompleted += (_, e) => {
+                try {
+                    using var stream = e.Result;
+
+                    using (var fileStream = File.Create(destination)) {
+                        stream.Seek(0, SeekOrigin.Begin);
+                        stream.CopyTo(fileStream);
+                    }
+                } catch (Exception ex) {
+                    MusicMixer.Logger.Warn(ex, ex.Message);
+                    ScreenNotification.ShowNotification(Resources.Something_went_wrong__Please_try_again_);
+                }
+            };
+        }
+
+        public void MergeRemote(string filePath) {
+            if (!File.Exists(filePath)) {
+                MusicMixer.Logger.Info("File not found or permission denied: " + filePath);
+                ScreenNotification.ShowNotification(Resources.Something_went_wrong__Please_try_again_);
+                return;
+            }
+
+            var remoteConnection = new ConnectionString {
+                Filename = filePath,
+                Connection = ConnectionType.Shared
+            };
+
+            this.AcquireWriteLock();
+            try {
+
+                using var remoteDb = new LiteDatabase(remoteConnection);
+
+                var remotePlaylists = remoteDb.GetCollection<Playlist>(TBL_PLAYLISTS)
+                                            .Include(x => x.Tracks).FindAll();
+
+                using var db = new LiteDatabase(_connectionString);
+
+                var playlists = db.GetCollection<Playlist>(TBL_PLAYLISTS)
+                                   .Include(x => x.Tracks);
+
+                foreach (var remoteList in remotePlaylists) {
+                    var playlist = playlists.FindOne(x => x.ExternalId.Equals(remoteList.ExternalId));
+
+                    if (playlist == null) {
+                        continue;
+                    }
+
+                    playlist.Tracks.AddRange(remoteList.Tracks);
+                    playlist.Tracks = playlist.Tracks.DistinctBy(x => x.ExternalId, StringComparer.InvariantCulture).ToList();
+                    if (!Upsert(playlist)) {
+                        ScreenNotification.ShowNotification(Resources.Something_went_wrong__Please_try_again_);
+                    }
+                }
+
+                var remoteThumbnails = remoteDb.GetStorage<string>(TBL_THUMBNAILS, TBL_THUMBNAIL_CHUNKS).FindAll();
+                var thumbnails = db.GetStorage<string>(TBL_THUMBNAILS, TBL_THUMBNAIL_CHUNKS);
+
+                foreach (var remoteThumb in remoteThumbnails.Where(remoteThumb => !thumbnails.Exists(remoteThumb.Id))) {
+                    using var stream = remoteThumb.OpenRead();
+                    thumbnails.Upload(remoteThumb.Id, remoteThumb.Filename, stream);
+                }
+
+            } catch (Exception e) {
+
+                MusicMixer.Logger.Warn(e, e.Message);
+                ScreenNotification.ShowNotification(Resources.Something_went_wrong__Please_try_again_);
+
+            } finally {
+                this.ReleaseWriteLock();
+            }
         }
 
         public AsyncTexture2D GetThumbnail(AudioSource source) {
@@ -81,6 +160,8 @@ namespace Nekres.Music_Mixer.Core.Services {
                 // Unsupported image format.
                 MusicMixer.Logger.Info(e,e.Message);
             }
+
+            stream.Dispose();
             return texture;
         }
 
