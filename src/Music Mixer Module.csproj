@@ -65,6 +65,7 @@
     <Compile Include="Core\Extensions\ObjectExtensions.cs" />
     <Compile Include="Core\Extensions\StringExtensions.cs" />
     <Compile Include="Core\Services\Audio\Source\SubmergedVolumeProvider.cs" />
+    <Compile Include="Core\Services\Data\External\Tracklist.cs" />
     <Compile Include="Core\Services\Data\Playlist.cs" />
     <Compile Include="Core\Services\Data\DbEntity.cs" />
     <Compile Include="Core\UI\KeyValueDropdown[T].cs" />

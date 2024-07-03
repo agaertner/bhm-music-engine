@@ -94,13 +94,13 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
                 Parent = flowPanel,
                 Width  = 100,
                 Height = 50,
-                Text   = "Download Defaults"
+                Text   = "Export"
             };
 
-            defaultBttn.Click += (_, e) => {
-                var dest = Path.Combine(MusicMixer.Instance.ModuleDirectory, "default_music.db");
-                MusicMixer.Instance.Data.DownloadRemote("https://raw.githubusercontent.com/agaertner/bhm-music-engine/main/raw/default_music.db", dest);
-                MusicMixer.Instance.Data.MergeRemote(dest);
+            defaultBttn.Click += async (_,_) => {
+                var json = MusicMixer.Instance.Data.ExportToJson();
+                var success = !string.IsNullOrEmpty(json) && await ClipboardUtil.WindowsClipboardService.SetTextAsync(json);
+                GameService.Content.PlaySoundEffectByName(success ? "color-change" : "error");
             };
 
             base.Build(buildPanel);
