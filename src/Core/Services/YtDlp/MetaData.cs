@@ -2,10 +2,14 @@
 using System;
 
 namespace Nekres.Music_Mixer.Core.Services.YtDlp {
-    public class MetaData
-    {
+    public class MetaData {
+
         [JsonIgnore]
-        public bool IsError { get; private set; }
+        public bool IsError => string.IsNullOrWhiteSpace(Id) // Id is required to avoid dublicates in a playlist and as thumbnail cache key.
+                            || string.IsNullOrWhiteSpace(Url)
+                            || !Url.IsWebLink() // Web Url is required to recreate audio urls.
+                            || TimeSpan.Zero.Equals(Duration)
+                            || Duration.TotalSeconds < 1; // A zero duration indicates an invalid link that wrongly passed previous checks.
 
         /// <summary>
         /// Video identifier
@@ -43,9 +47,6 @@ namespace Nekres.Music_Mixer.Core.Services.YtDlp {
             Url      = url      ?? string.Empty;
             Uploader = uploader ?? string.Empty;
             Duration = duration;
-            IsError = string.IsNullOrWhiteSpace(Id) || // Id is required to avoid dublicates in a playlist and as thumbnail cache key.
-                      !Url.IsWebLink()              || // Web Url is required to recreate audio urls.
-                      Duration.TotalSeconds < 1;       // A zero duration indicates an invalid link that wrongly passed previous checks.
         }
     }
 }

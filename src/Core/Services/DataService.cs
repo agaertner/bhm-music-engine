@@ -67,11 +67,11 @@ namespace Nekres.Music_Mixer.Core.Services {
             }
         }
 
-        private async Task<AudioSource> FetchSource(string url) {
-            var data = await MusicMixer.Instance.YtDlp.GetMetaData(url);
+        private async Task<AudioSource> FetchSource(Tracklist.Track track) {
+            var data = await MusicMixer.Instance.YtDlp.GetMetaData(track.Url);
 
             if (data.IsError) {
-                MusicMixer.Logger.Warn($"Faulty metadata or obsolete media URL: {url}");
+                MusicMixer.Logger.Warn($"Faulty metadata or obsolete media URL: {track.Url}");
                 return AudioSource.Empty;
             }
 
@@ -82,8 +82,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                 PageUrl    = data.Url,
                 Duration   = data.Duration,
                 Volume     = 1,
-                DayCycles = AudioSource.DayCycle.Day |
-                            AudioSource.DayCycle.Night
+                DayCycles = (AudioSource.DayCycle)track.DayCycle
             };
         }
 
@@ -98,7 +97,7 @@ namespace Nekres.Music_Mixer.Core.Services {
 
             foreach (var track in list.Tracks) {
                 progress?.Report(track.Title, true);
-                var toImport = await FetchSource(track.Url);
+                var toImport = await FetchSource(track);
                 if (playlist.Tracks.Any(x => string.Equals(x.ExternalId, toImport.ExternalId))) {
                     continue;
                 }

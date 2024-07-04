@@ -13,14 +13,17 @@ namespace Nekres.Music_Mixer.Core {
         }
 
         protected override void OnReport(string value) {
-            if (Total < 1) {
+            if (Total < 1 || _current > Total || string.IsNullOrEmpty(value)) {
                 base.OnReport(value);
+                return;
             }
             base.OnReport($"({(int)Math.Round(_current / (float)Total * 100)}%) " + value);
         }
 
         public void Report(string val, bool increment = false) {
-            _current++;
+            if (increment) {
+                _current++;
+            }
             OnReport(val);
         }
     }
