@@ -146,7 +146,6 @@
   </data>
   <data name="Link pasted. Checking..." xml:space="preserve">
     <value>Link eingefügt. Prüfe…</value>
-    <comment>Fuzzy</comment>
   </data>
   <data name="Please wait." xml:space="preserve">
     <value>Bitte warte.</value>
@@ -192,5 +191,41 @@
   </data>
   <data name="Checking link..." xml:space="preserve">
     <value>Prüfe Link…</value>
+  </data>
+  <data name="New database created." xml:space="preserve">
+    <value>Neue Datenbank erstellt.</value>
+  </data>
+  <data name="Importing default playlists." xml:space="preserve">
+    <value>Importiere Standard-Wiedergabelisten.</value>
+  </data>
+  <data name="Warclaw" xml:space="preserve">
+    <value>Kriegsklaue</value>
+  </data>
+  <data name="Raptor" xml:space="preserve">
+    <value>Raptor</value>
+  </data>
+  <data name="Siege Turtle" xml:space="preserve">
+    <value>Belagerungsschildkröte</value>
+  </data>
+  <data name="Springer" xml:space="preserve">
+    <value>Springer</value>
+  </data>
+  <data name="Skimmer" xml:space="preserve">
+    <value>Schweberochen</value>
+  </data>
+  <data name="Griffon" xml:space="preserve">
+    <value>Greif</value>
+  </data>
+  <data name="Roller Beetle" xml:space="preserve">
+    <value>Rollkäfer</value>
+  </data>
+  <data name="Skyscale" xml:space="preserve">
+    <value>Himmelsschuppe</value>
+  </data>
+  <data name="Jackal" xml:space="preserve">
+    <value>Schakal</value>
+  </data>
+  <data name="Skiff" xml:space="preserve">
+    <value>Skiff</value>
   </data>
 </root>

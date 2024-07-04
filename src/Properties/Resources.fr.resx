@@ -194,4 +194,40 @@
   <data name="Checking link..." xml:space="preserve">
     <value>Vérification du lien…</value>
   </data>
+  <data name="New database created." xml:space="preserve">
+    <value>Création d&apos;une nouvelle base de données.</value>
+  </data>
+  <data name="Importing default playlists." xml:space="preserve">
+    <value>Importation de listes de lecture par défaut.</value>
+  </data>
+  <data name="Warclaw" xml:space="preserve">
+    <value>Razziafelis</value>
+  </data>
+  <data name="Raptor" xml:space="preserve">
+    <value>Raptor</value>
+  </data>
+  <data name="Siege Turtle" xml:space="preserve">
+    <value>Tortue de siège</value>
+  </data>
+  <data name="Springer" xml:space="preserve">
+    <value>Frappesol</value>
+  </data>
+  <data name="Skimmer" xml:space="preserve">
+    <value>Voldécume</value>
+  </data>
+  <data name="Griffon" xml:space="preserve">
+    <value>Griffon</value>
+  </data>
+  <data name="Roller Beetle" xml:space="preserve">
+    <value>Scaraboule</value>
+  </data>
+  <data name="Skyscale" xml:space="preserve">
+    <value>Dracaille</value>
+  </data>
+  <data name="Jackal" xml:space="preserve">
+    <value>Chacal</value>
+  </data>
+  <data name="Skiff" xml:space="preserve">
+    <value>Esquif</value>
+  </data>
 </root>

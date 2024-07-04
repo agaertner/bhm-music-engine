@@ -9,11 +9,11 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Nekres.Music_Mixer.Core.Services;
 using Nekres.Music_Mixer.Core.Services.Data;
+using Nekres.Music_Mixer.Properties;
 using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Nekres.Music_Mixer.Properties;
 
 namespace Nekres.Music_Mixer.Core.UI.Library {
     public class BgmLibraryView : View {
@@ -199,6 +199,12 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
         }
 
         private void AddBgmEntry(AudioSource source, FlowPanel parent) {
+            if (source.Duration.Equals(TimeSpan.Zero)) {
+                return;
+            }
+
+            source.Title ??= string.Empty;
+
             var bgmEntryContainer = new ViewContainer {
                 Parent = parent,
                 Width = parent.ContentRegion.Width,

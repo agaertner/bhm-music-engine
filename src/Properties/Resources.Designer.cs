@@ -115,6 +115,33 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Griffon.
+        /// </summary>
+        internal static string Griffon {
+            get {
+                return ResourceManager.GetString("Griffon", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Importing default playlists..
+        /// </summary>
+        internal static string Importing_default_playlists_ {
+            get {
+                return ResourceManager.GetString("Importing default playlists.", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Jackal.
+        /// </summary>
+        internal static string Jackal {
+            get {
+                return ResourceManager.GetString("Jackal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Link pasted. Checking….
         /// </summary>
         internal static string Link_pasted__Checking___ {
@@ -147,6 +174,15 @@ namespace Nekres.Music_Mixer.Properties {
         internal static string Mute_when_GW2_is_in_the_background {
             get {
                 return ResourceManager.GetString("Mute when GW2 is in the background", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to New database created..
+        /// </summary>
+        internal static string New_database_created_ {
+            get {
+                return ResourceManager.GetString("New database created.", resourceCulture);
             }
         }
         
@@ -214,6 +250,15 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Raptor.
+        /// </summary>
+        internal static string Raptor {
+            get {
+                return ResourceManager.GetString("Raptor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Recommended platforms:.
         /// </summary>
         internal static string Recommended_platforms_ {
@@ -232,6 +277,15 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Roller Beetle.
+        /// </summary>
+        internal static string Roller_Beetle {
+            get {
+                return ResourceManager.GetString("Roller Beetle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Select an output device….
         /// </summary>
         internal static string Select_an_output_device___ {
@@ -241,11 +295,56 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Siege Turtle.
+        /// </summary>
+        internal static string Siege_Turtle {
+            get {
+                return ResourceManager.GetString("Siege Turtle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Skiff.
+        /// </summary>
+        internal static string Skiff {
+            get {
+                return ResourceManager.GetString("Skiff", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Skimmer.
+        /// </summary>
+        internal static string Skimmer {
+            get {
+                return ResourceManager.GetString("Skimmer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Skyscale.
+        /// </summary>
+        internal static string Skyscale {
+            get {
+                return ResourceManager.GetString("Skyscale", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Something went wrong. Please try again..
         /// </summary>
         internal static string Something_went_wrong__Please_try_again_ {
             get {
                 return ResourceManager.GetString("Something went wrong. Please try again.", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Springer.
+        /// </summary>
+        internal static string Springer {
+            get {
+                return ResourceManager.GetString("Springer", resourceCulture);
             }
         }
         
@@ -273,6 +372,15 @@ namespace Nekres.Music_Mixer.Properties {
         internal static string Use_a_different_Output_Device {
             get {
                 return ResourceManager.GetString("Use a different Output Device", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Warclaw.
+        /// </summary>
+        internal static string Warclaw {
+            get {
+                return ResourceManager.GetString("Warclaw", resourceCulture);
             }
         }
         

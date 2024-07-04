@@ -36,7 +36,7 @@ namespace Nekres.Music_Mixer.Core.UI.Playlists {
 
             var playlistMenuPanel = new Panel {
                 Parent = buildPanel,
-                Width  = 150,
+                Width  = 210,
                 Height = buildPanel.ContentRegion.Height,
                 Title  = Resources.Playlists
             };
@@ -58,10 +58,11 @@ namespace Nekres.Music_Mixer.Core.UI.Playlists {
 
             foreach (var mountType in mountTypes) {
 
-                var name = mountType.ToString().SplitCamelCase();
+                var name = mountType.FriendlyName();
 
                 var mountItem = new MenuItem {
                     Text   = name,
+                    BasicTooltipText = name,
                     Parent = menu,
                     Icon   = _icons[mountType]
                 };

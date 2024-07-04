@@ -5,8 +5,10 @@ using Blish_HUD.Input;
 using Blish_HUD.Modules;
 using Blish_HUD.Modules.Managers;
 using Blish_HUD.Settings;
+using Flurl.Http;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Nekres.Music_Mixer.Core;
 using Nekres.Music_Mixer.Core.Services;
 using Nekres.Music_Mixer.Core.Services.Audio;
 using Nekres.Music_Mixer.Core.Services.Data;
@@ -17,6 +19,7 @@ using Nekres.Music_Mixer.Properties;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Nekres.Music_Mixer {
@@ -37,6 +40,7 @@ namespace Nekres.Music_Mixer {
         #endregion
 
         internal SettingEntry<ModuleConfig> ModuleConfig;
+        internal SettingEntry<bool>         InitialLoad;
 
         public string ModuleDirectory { get; private set; }
 
@@ -55,23 +59,30 @@ namespace Nekres.Music_Mixer {
 
         private  float _prevMasterVol;
         internal float MasterVolume => ModuleConfig.Value == null ? _prevMasterVol : _prevMasterVol = ModuleConfig.Value.MasterVolume;
-        
+
+        private const string DEFAULT_MUSIC_URL = "https://github.com/agaertner/bhm-music-engine/raw/main/default_music.json";
 
         [ImportingConstructor]
         public MusicMixer([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters) { Instance = this; }
 
         protected override void DefineSettings(SettingCollection settings) {
             settings.RenderInUi = false;
-            ModuleConfig = settings.DefineSetting("module_config", Core.UI.Settings.ModuleConfig.Default);
+            ModuleConfig        = settings.DefineSetting("module_config", Core.UI.Settings.ModuleConfig.Default);
+            InitialLoad         = settings.DefineSetting("initial_load",  true);
         }
 
         protected override void Initialize() {
             ModuleDirectory  = DirectoriesManager.GetFullDirectoryPath("music_mixer");
 
-            YtDlp           = new YtDlpService();
-            Data            = new DataService();
-            Gw2State        = new Gw2StateService();
-            Audio           = new AudioService();
+            YtDlp    = new YtDlpService();
+            Data     = new DataService();
+            Gw2State = new Gw2StateService();
+            Audio    = new AudioService();
+
+            _cornerTexture = ContentsManager.GetTexture("corner_icon.png");
+            _cornerIcon = new CornerIcon {
+                Icon = _cornerTexture
+            };
         }
 
         protected override void Update(GameTime gameTime) {
@@ -84,8 +95,8 @@ namespace Nekres.Music_Mixer {
             }
         }
 
-        public IProgress<string> GetModuleProgressHandler() {
-            return new Progress<string>(UpdateModuleLoading);
+        public ProgressTotal GetModuleProgressHandler() {
+            return new ProgressTotal(UpdateModuleLoading);
         }
 
         private void UpdateModuleLoading(string loadingMessage) {
@@ -101,7 +112,19 @@ namespace Nekres.Music_Mixer {
         }
 
         protected override async Task LoadAsync() {
-            await YtDlp.Update(GetModuleProgressHandler());
+            var progress = GetModuleProgressHandler();
+            await YtDlp.Update(progress);
+
+            if (InitialLoad.Value) {
+                ScreenNotification.ShowNotification($"{Resources.New_database_created_} {Resources.Importing_default_playlists_}");
+                var defaultMusic = await DEFAULT_MUSIC_URL.GetJsonAsync<List<Tracklist>>();
+                progress.Total = defaultMusic.SelectMany(x => x.Tracks).Count();
+                foreach (var tracklist in defaultMusic) {
+                    await Data.LoadTracklist(tracklist, progress);
+                }
+                progress.Report(null);
+                InitialLoad.Value = false;
+            }
         }
 
         protected override void OnModuleLoaded(EventArgs e) {
@@ -114,7 +137,7 @@ namespace Nekres.Music_Mixer {
 
             ModuleConfig.Value.MasterVolume = MathHelper.Clamp(ModuleConfig.Value.MasterVolume, 0f, 2f);
 
-            _cornerTexture = ContentsManager.GetTexture("corner_icon.png");
+            
             var windowRegion = new Rectangle(40, 26, 913, 691);
             _moduleWindow = new TabbedWindow2(GameService.Content.DatAssetCache.GetTextureFromAssetId(155985),
                                               windowRegion,
@@ -145,10 +168,6 @@ namespace Nekres.Music_Mixer {
             }, Resources.Defeated);
             _moduleWindow.Tabs.Add(defeatedTab);
 
-            _cornerIcon = new CornerIcon
-            {
-                Icon = _cornerTexture
-            };
             _cornerIcon.LeftMouseButtonReleased += OnModuleIconClick;
 
             _moduleWindow.TabChanged += OnTabChanged;

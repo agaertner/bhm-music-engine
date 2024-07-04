@@ -62,6 +62,7 @@
   <ItemGroup>
     <Compile Include="..\submodules\bhud-extended\**\*.cs" Link="_Submodules\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Remove="..\submodules\**\AssemblyInfo.cs" />
+    <Compile Include="Core\Extensions\MountTypeExtensions.cs" />
     <Compile Include="Core\Extensions\ObjectExtensions.cs" />
     <Compile Include="Core\Extensions\StringExtensions.cs" />
     <Compile Include="Core\Services\Audio\Source\SubmergedVolumeProvider.cs" />
@@ -75,6 +76,7 @@
     <Compile Include="Core\UI\Settings\ModuleConfig.cs" />
     <Compile Include="Core\UI\Settings\ModuleSettingsView.cs" />
     <Compile Include="Core\Utils\AudioUtil.cs" />
+    <Compile Include="Core\Utils\ProgressTotal.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

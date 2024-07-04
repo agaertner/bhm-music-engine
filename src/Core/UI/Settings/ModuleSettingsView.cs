@@ -92,9 +92,9 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
 
             var defaultBttn = new StandardButton {
                 Parent = flowPanel,
-                Width  = 100,
-                Height = 50,
-                Text   = "Export"
+                Width  = 200,
+                Height = 23,
+                Text   = "Copy Playlists to Clipboard"
             };
 
             defaultBttn.Click += async (_,_) => {
