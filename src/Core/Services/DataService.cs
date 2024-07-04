@@ -5,6 +5,7 @@ using LiteDB;
 using Microsoft.Xna.Framework.Graphics;
 using Nekres.Music_Mixer.Core.Services.Data;
 using Nekres.Music_Mixer.Properties;
+using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using System;
@@ -13,9 +14,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
-using Newtonsoft.Json;
+using System.Threading.Tasks;
 using Image = SixLabors.ImageSharp.Image;
-using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 using MountType = Gw2Sharp.Models.MountType;
 
 namespace Nekres.Music_Mixer.Core.Services {
@@ -65,6 +65,47 @@ namespace Nekres.Music_Mixer.Core.Services {
             } finally {
                 this.ReleaseWriteLock();
             }
+        }
+
+        private async Task<AudioSource> FetchSource(string url) {
+            var data = await MusicMixer.Instance.YtDlp.GetMetaData(url);
+
+            if (data.IsError) {
+                MusicMixer.Logger.Warn($"Faulty metadata or obsolete media URL: {url}");
+                return AudioSource.Empty;
+            }
+
+            return new AudioSource {
+                ExternalId = data.Id,
+                Uploader   = data.Uploader,
+                Title      = data.Title,
+                PageUrl    = data.Url,
+                Duration   = data.Duration,
+                Volume     = 1,
+                DayCycles = AudioSource.DayCycle.Day |
+                            AudioSource.DayCycle.Night
+            };
+        }
+
+        public async Task LoadTracklist(Tracklist list, ProgressTotal progress) {
+            if (!GetPlaylist(list.ExternalId, out var playlist)) {
+                playlist = new Playlist {
+                    ExternalId = list.ExternalId,
+                    Enabled    = true,
+                    Tracks     = new List<AudioSource>()
+                };
+            }
+
+            foreach (var track in list.Tracks) {
+                progress?.Report(track.Title, true);
+                var toImport = await FetchSource(track.Url);
+                if (playlist.Tracks.Any(x => string.Equals(x.ExternalId, toImport.ExternalId))) {
+                    continue;
+                }
+                Upsert(toImport);
+                playlist.Tracks.Add(toImport);
+            }
+            Upsert(playlist);
         }
 
         public AsyncTexture2D GetThumbnail(AudioSource source) {

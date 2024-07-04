@@ -75,6 +75,7 @@
     <Compile Include="Core\UI\Settings\ModuleConfig.cs" />
     <Compile Include="Core\UI\Settings\ModuleSettingsView.cs" />
     <Compile Include="Core\Utils\AudioUtil.cs" />
+    <Compile Include="Core\Utils\ProgressTotal.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
