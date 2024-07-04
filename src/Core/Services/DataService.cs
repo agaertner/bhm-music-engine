@@ -27,12 +27,11 @@ namespace Nekres.Music_Mixer.Core.Services {
         private          ManualResetEvent     _lockReleased = new(false);
         private          bool                 _lockAcquired = false;
 
-        private const string TBL_PLAYLISTS       = "playlists";
-        public const string TBL_AUDIO_SOURCES    = "audio_sources";
+        private const string TBL_PLAYLISTS        = "playlists";
+        public const  string TBL_AUDIO_SOURCES    = "audio_sources";
         private const string TBL_THUMBNAILS       = "thumbnails";
         private const string TBL_THUMBNAIL_CHUNKS = "thumbnail_chunks";
-
-        private const string LITEDB_FILENAME = "music.db";
+        private const string LITEDB_FILENAME      = "music.db";
 
         public DataService() {
             _connectionString = new ConnectionString {
@@ -46,7 +45,7 @@ namespace Nekres.Music_Mixer.Core.Services {
             try {
                 using var db = new LiteDatabase(_connectionString);
                 var collection = db.GetCollection<Playlist>(TBL_PLAYLISTS).Include(x => x.Tracks).FindAll();
-                var tracklists = collection.Select(playlist => new Tracklist {
+                var tracklists = collection.Where(x => x.Tracks?.Any() ?? false).Select(playlist => new Tracklist {
                                            ExternalId = playlist.ExternalId,
                                            Tracks = playlist.Tracks.Where(x => !string.IsNullOrEmpty(x.PageUrl))
                                                             .Select(x => new Tracklist.Track {
@@ -82,7 +81,9 @@ namespace Nekres.Music_Mixer.Core.Services {
                 PageUrl    = data.Url,
                 Duration   = data.Duration,
                 Volume     = 1,
-                DayCycles = (AudioSource.DayCycle)track.DayCycle
+                DayCycles  = Enum.IsDefined(typeof(AudioSource.DayCycle), track.DayCycle) 
+                                 ? (AudioSource.DayCycle)track.DayCycle 
+                                 : AudioSource.DayCycle.Day | AudioSource.DayCycle.Night
             };
         }
 

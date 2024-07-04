@@ -118,6 +118,10 @@ namespace Nekres.Music_Mixer {
             if (InitialLoad.Value) {
                 ScreenNotification.ShowNotification($"{Resources.New_database_created_} {Resources.Importing_default_playlists_}");
                 var defaultMusic = await DEFAULT_MUSIC_URL.GetJsonAsync<List<Tracklist>>();
+                if (defaultMusic == null) {
+                    progress.Report(null);
+                    return;
+                }
                 progress.Total = defaultMusic.SelectMany(x => x.Tracks).Count();
                 foreach (var tracklist in defaultMusic) {
                     await Data.LoadTracklist(tracklist, progress);
