@@ -157,7 +157,7 @@ namespace Nekres.Music_Mixer {
             };
 
             _mountTabIcon = ContentsManager.GetTexture("tabs/raptor.png");
-            var mountTab = new Tab(_mountTabIcon, () => new MountPlaylistsView(), Resources.Mounted);
+            var mountTab = new Tab(_mountTabIcon, () => new NpLibraryWrapperView(new MountPlaylistsView()), Resources.Mounted);
             _moduleWindow.Tabs.Add(mountTab);
 
             _defeatedIcon = ContentsManager.GetTexture("tabs/downed_enemy.png");
@@ -168,7 +168,7 @@ namespace Nekres.Music_Mixer {
                         Tracks     = new List<AudioSource>()
                     };
                 }
-                return new BgmLibraryView(context, Resources.Defeated);
+                return new NpLibraryWrapperView(new BgmLibraryView(context, Resources.Defeated));
             }, Resources.Defeated);
             _moduleWindow.Tabs.Add(defeatedTab);
 

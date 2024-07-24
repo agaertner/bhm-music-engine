@@ -1,11 +1,8 @@
 ﻿using Blish_HUD;
-using Blish_HUD.Content;
 using Blish_HUD.Controls;
 using Blish_HUD.Graphics.UI;
 using Blish_HUD.Input;
-using Glide;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Nekres.Music_Mixer.Core.Services;
 using Nekres.Music_Mixer.Core.Services.Data;
@@ -18,11 +15,11 @@ using System.Threading.Tasks;
 namespace Nekres.Music_Mixer.Core.UI.Library {
     public class BgmLibraryView : View {
 
-        private Playlist _playlist;
-        private KeyBinding _pasteShortcut;
-        private FlowPanel _tracksPanel;
-        private string _name;
-        private bool _checkingLink;
+        private Playlist      _playlist;
+        private KeyBinding    _pasteShortcut;
+        private FlowPanel     _tracksPanel;
+        private string        _name;
+        private bool          _checkingLink;
 
         public BgmLibraryView(Playlist playlist, string playlistName) {
             _name = playlistName;
@@ -30,12 +27,11 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
             _pasteShortcut = new KeyBinding(ModifierKeys.Ctrl, Keys.V) {
                 Enabled = true
             };
-
             _pasteShortcut.Activated += OnPastePressed;
         }
 
         protected override void Unload() {
-            _pasteShortcut.Enabled = false;
+            _pasteShortcut.Enabled   =  false;
             _pasteShortcut.Activated -= OnPastePressed;
             base.Unload();
         }
@@ -64,7 +60,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 var url = await ClipboardUtil.WindowsClipboardService.GetTextAsync();
 
                 if (!url.IsWebLink()) {
-                    ScreenNotification.ShowNotification("Your clipboard does not contain a valid link.", ScreenNotification.NotificationType.Error);
+                    ScreenNotification.ShowNotification(Resources.Your_clipboard_does_not_contain_a_valid_link_, ScreenNotification.NotificationType.Error);
                     GameService.Content.PlaySoundEffectByName("error");
                     return;
                 }
@@ -168,15 +164,15 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
             };
 
             _tracksPanel = new FlowPanel {
-                Parent = buildPanel,
-                Width = buildPanel.ContentRegion.Width,
-                Top = title.Bottom,
-                Height = buildPanel.ContentRegion.Height - title.Bottom - 32 - Panel.BOTTOM_PADDING,
-                ShowBorder = true,
-                FlowDirection = ControlFlowDirection.SingleTopToBottom,
-                ControlPadding = new Vector2(0, Panel.BOTTOM_PADDING),
+                Parent              = buildPanel,
+                Width               = buildPanel.ContentRegion.Width,
+                Top                 = title.Bottom,
+                Height              = buildPanel.ContentRegion.Height - title.Height - 40,
+                ShowBorder          = true,
+                FlowDirection       = ControlFlowDirection.SingleTopToBottom,
+                ControlPadding      = new Vector2(0,                   Panel.BOTTOM_PADDING),
                 OuterControlPadding = new Vector2(Panel.RIGHT_PADDING, Panel.BOTTOM_PADDING),
-                CanScroll = true
+                CanScroll           = true
             };
 
             var addBttn = new StandardButton {
@@ -218,7 +214,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 if (!MusicMixer.Instance.Data.Upsert(_playlist)) {
                     ScreenNotification.ShowNotification(Resources.Something_went_wrong__Please_try_again_, ScreenNotification.NotificationType.Error);
                     GameService.Content.PlaySoundEffectByName("error");
-                };
+                }
             };
 
             bgmEntryContainer.Show(bgmEntry);
@@ -233,6 +229,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
             public BgmEntry(AudioSource audioSource) {
                 _audioSource = audioSource;
             }
+
             protected override void Build(Container buildPanel) {
 
                 var slidePanel = new SlidePanel {
@@ -376,85 +373,6 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
 
                 base.Build(buildPanel);
             }
-        }
-
-        public class SlidePanel : Panel {
-
-            private Tween _tween;
-
-            public void SlideIn() {
-                _tween?.Cancel();
-                _tween = Animation.Tweener.Tween(this, new { Left = 0, Opacity = 1f }, 0.3f).Ease(Ease.CubeOut);
-            }
-
-            public void SlideOut(Action onComplete = null) {
-                _tween?.Cancel();
-                _tween = Animation.Tweener.Tween(this, new { Left = Parent.ContentRegion.Width, Opacity = 0f }, 0.3f)
-                                  .Ease(Ease.CubeIn)
-                                  .OnComplete(onComplete);
-            }
-
-            protected override void DisposeControl() {
-                SlideOut(base.DisposeControl);
-            }
-        }
-
-        public class RoundedImage : Control {
-
-            private Effect _curvedBorder;
-
-            private AsyncTexture2D _texture;
-
-            private SpriteBatchParameters _defaultParams;
-            private SpriteBatchParameters _curvedBorderParams;
-
-            private float _radius = 0.215f;
-            private Tween _tween;
-
-            public RoundedImage(AsyncTexture2D texture) {
-                _defaultParams = new();
-                _curvedBorder = MusicMixer.Instance.ContentsManager.GetEffect<Effect>(@"effects\curvedborder.mgfx");
-                _curvedBorderParams = new() {
-                    Effect = _curvedBorder
-                };
-                _texture = texture;
-
-                //_curvedBorder.Parameters["Smooth"].SetValue(false); // Disable anti-aliasing
-            }
-
-            protected override void DisposeControl() {
-                _curvedBorder.Dispose();
-                base.DisposeControl();
-            }
-
-            protected override void OnMouseEntered(MouseEventArgs e) {
-                _tween?.Cancel();
-                _tween = Animation.Tweener.Tween(this, new { _radius = 0.315f }, 0.1f);
-                base.OnMouseEntered(e);
-            }
-
-            protected override void OnMouseLeft(MouseEventArgs e) {
-                _tween?.Cancel();
-                _tween = Animation.Tweener.Tween(this, new { _radius = 0.215f }, 0.1f);
-                base.OnMouseLeft(e);
-            }
-
-            protected override void Paint(SpriteBatch spriteBatch, Rectangle bounds) {
-                if (!_texture.HasTexture || !_texture.HasSwapped) {
-                    LoadingSpinnerUtil.DrawLoadingSpinner(this, spriteBatch, new Rectangle((bounds.Width - 32) / 2, (bounds.Height - 32) / 2, 32, 32));
-                    return;
-                }
-
-                _curvedBorder.Parameters["Radius"].SetValue(_radius);
-                _curvedBorder.Parameters["Opacity"].SetValue(this.Opacity);
-
-                spriteBatch.End();
-                spriteBatch.Begin(_curvedBorderParams);
-                spriteBatch.DrawOnCtrl(this, _texture, new Rectangle(0, 0, this.Width, this.Height));
-                spriteBatch.End();
-                spriteBatch.Begin(_defaultParams);
-            }
-
         }
     }
 }

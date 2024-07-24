@@ -105,6 +105,8 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
             this.AudioTrack?.Dispose();
             this.AudioTrack = AudioTrack.Empty;
+            _currentSource = AudioSource.Empty;
+            MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
         }
 
         private async void OnSoundtrackFinished(object o, EventArgs e)

@@ -14,7 +14,6 @@ namespace Nekres.Music_Mixer.Core.UI.Playlists {
     public class MountPlaylistsView : View {
 
         private Dictionary<MountType, Texture2D> _icons;
-
         public MountPlaylistsView() {
             _icons = Enum.GetValues(typeof(MountType))
                          .Cast<MountType>()
@@ -28,12 +27,10 @@ namespace Nekres.Music_Mixer.Core.UI.Playlists {
             foreach (var texture in _icons.Values) {
                 texture?.Dispose();
             }
-
             base.Unload();
         }
 
         protected override void Build(Container buildPanel) {
-
             var playlistMenuPanel = new Panel {
                 Parent = buildPanel,
                 Width  = 210,
@@ -51,7 +48,7 @@ namespace Nekres.Music_Mixer.Core.UI.Playlists {
                 Parent = buildPanel,
                 Left   = menu.Right                     + Panel.RIGHT_PADDING,
                 Width  = buildPanel.ContentRegion.Width - menu.Width - Panel.RIGHT_PADDING,
-                Height = buildPanel.ContentRegion.Height
+                Height = buildPanel.ContentRegion.Height - Panel.BOTTOM_PADDING
             };
 
             var mountTypes = Enum.GetValues(typeof(MountType)).Cast<MountType>().Skip(1);
