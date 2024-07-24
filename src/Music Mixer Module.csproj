@@ -78,6 +78,7 @@
     <Compile Include="Core\UI\Settings\ConfigBase.cs" />
     <Compile Include="Core\UI\Settings\ModuleConfig.cs" />
     <Compile Include="Core\UI\Settings\ModuleSettingsView.cs" />
+    <Compile Include="Core\UI\Settings\CustomSettingsView.cs" />
     <Compile Include="Core\UI\SlidePanel.cs" />
     <Compile Include="Core\Utils\AudioUtil.cs" />
     <Compile Include="Core\Utils\ProgressTotal.cs" />

@@ -50,7 +50,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
             if (string.IsNullOrEmpty(source.AudioUrl)) {
                 source.AudioUrl = await MusicMixer.Instance.YtDlp.GetAudioOnlyUrl(source.PageUrl);
-                MusicMixer.Instance.Data.Upsert(source);
+                MusicMixer.Instance?.Data.Upsert(source);
             }
             
             _currentSource = source;

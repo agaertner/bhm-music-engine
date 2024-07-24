@@ -1,5 +1,6 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Controls;
+using Blish_HUD.Graphics.UI;
 using Blish_HUD.Input;
 using Blish_HUD.Modules;
 using Blish_HUD.Modules.Managers;
@@ -50,6 +51,8 @@ namespace Nekres.Music_Mixer {
 
         private TabbedWindow2 _moduleWindow;
         private CornerIcon    _cornerIcon;
+        private ProgressTotal _moduleProgress;
+        private Tab           _settingsTab;
 
         // Textures
         private Texture2D _cornerTexture;
@@ -65,9 +68,13 @@ namespace Nekres.Music_Mixer {
         public MusicMixer([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters) { Instance = this; }
 
         protected override void DefineSettings(SettingCollection settings) {
-            settings.RenderInUi = false;
+            settings.RenderInUi = false; // Does not work on root settings collection. Replacing entire view instead (see below).
             ModuleConfig        = settings.DefineSetting("module_config", Core.UI.Settings.ModuleConfig.Default);
             InitialLoad         = settings.DefineSetting("initial_load",  true);
+        }
+
+        public override IView GetSettingsView() {
+            return new CustomSettingsView();
         }
 
         protected override void Initialize() {
@@ -95,7 +102,7 @@ namespace Nekres.Music_Mixer {
         }
 
         public ProgressTotal GetModuleProgressHandler() {
-            return new ProgressTotal(UpdateModuleLoading);
+            return _moduleProgress ??= new ProgressTotal(UpdateModuleLoading);
         }
 
         private void UpdateModuleLoading(string loadingMessage) {
@@ -167,8 +174,8 @@ namespace Nekres.Music_Mixer {
             }, Resources.Defeated);
             _moduleWindow.Tabs.Add(defeatedTab);
 
-            var settingsTab = new Tab(GameService.Content.DatAssetCache.GetTextureFromAssetId(155052), () => new ModuleSettingsView(this.ModuleConfig.Value), Resources.Settings);
-            _moduleWindow.Tabs.Add(settingsTab);
+            _settingsTab = new Tab(GameService.Content.DatAssetCache.GetTextureFromAssetId(155052), () => new ModuleSettingsView(this.ModuleConfig.Value), Resources.Settings);
+            _moduleWindow.Tabs.Add(_settingsTab);
 
             _cornerIcon.LeftMouseButtonReleased += OnModuleIconClick;
 
@@ -186,9 +193,16 @@ namespace Nekres.Music_Mixer {
             _moduleWindow.Subtitle = e.NewValue.Name;
         }
 
-        public void OnModuleIconClick(object o, MouseEventArgs e)
-        {
+        private void OnModuleIconClick(object o, MouseEventArgs e) {
             _moduleWindow?.ToggleWindow();
+        }
+
+        internal void ShowSettings() {
+            if (_moduleWindow == null) {
+                return;
+            }
+            _moduleWindow.Show();
+            _moduleWindow.SelectedTab = _settingsTab;
         }
 
         /// <inheritdoc />

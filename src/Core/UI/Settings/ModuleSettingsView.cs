@@ -6,7 +6,6 @@ using Nekres.Music_Mixer.Core.Services;
 using Nekres.Music_Mixer.Core.UI.Controls;
 using Nekres.Music_Mixer.Properties;
 using System;
-using System.IO;
 using System.Linq;
 
 namespace Nekres.Music_Mixer.Core.UI.Settings {
