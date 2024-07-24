@@ -230,4 +230,7 @@
   <data name="Skiff" xml:space="preserve">
     <value>Esquif</value>
   </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Paramètres</value>
+  </data>
 </root>

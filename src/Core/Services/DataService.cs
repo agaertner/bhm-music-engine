@@ -45,7 +45,7 @@ namespace Nekres.Music_Mixer.Core.Services {
             try {
                 using var db = new LiteDatabase(_connectionString);
                 var collection = db.GetCollection<Playlist>(TBL_PLAYLISTS).Include(x => x.Tracks).FindAll();
-                var tracklists = collection.Where(x => x.Tracks?.Any() ?? false).Select(playlist => new Tracklist {
+                var tracklists = collection.Select(playlist => new Tracklist {
                                            ExternalId = playlist.ExternalId,
                                            Tracks = playlist.Tracks.Where(x => !string.IsNullOrEmpty(x.PageUrl))
                                                             .Select(x => new Tracklist.Track {
@@ -53,6 +53,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                                                                  Url   = x.PageUrl,
                                                                  DayCycle = (int)x.DayCycles
                                                              }).ToList()}).ToList();
+                tracklists.RemoveAll(x => !x.Tracks.Any());
                 return JsonConvert.SerializeObject(tracklists);
 
             } catch (Exception e) {

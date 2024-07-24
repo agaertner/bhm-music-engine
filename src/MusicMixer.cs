@@ -1,6 +1,5 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Controls;
-using Blish_HUD.Graphics.UI;
 using Blish_HUD.Input;
 using Blish_HUD.Modules;
 using Blish_HUD.Modules.Managers;
@@ -107,10 +106,6 @@ namespace Nekres.Music_Mixer {
             _cornerIcon.LoadingMessage = loadingMessage;
         }
 
-        public override IView GetSettingsView() {
-            return new ModuleSettingsView(this.ModuleConfig.Value);
-        }
-
         protected override async Task LoadAsync() {
             var progress = GetModuleProgressHandler();
             await YtDlp.Update(progress);
@@ -171,6 +166,9 @@ namespace Nekres.Music_Mixer {
                 return new NpLibraryWrapperView(new BgmLibraryView(context, Resources.Defeated));
             }, Resources.Defeated);
             _moduleWindow.Tabs.Add(defeatedTab);
+
+            var settingsTab = new Tab(GameService.Content.DatAssetCache.GetTextureFromAssetId(155052), () => new ModuleSettingsView(this.ModuleConfig.Value), Resources.Settings);
+            _moduleWindow.Tabs.Add(settingsTab);
 
             _cornerIcon.LeftMouseButtonReleased += OnModuleIconClick;
 
