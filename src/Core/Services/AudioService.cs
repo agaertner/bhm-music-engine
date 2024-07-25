@@ -3,7 +3,6 @@ using Nekres.Music_Mixer.Core.Services.Data;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Nekres.Music_Mixer.Core.UI.Settings;
 
 namespace Nekres.Music_Mixer.Core.Services.Audio {
     internal class AudioService : IDisposable
@@ -12,7 +11,6 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
         public AudioTrack AudioTrack { get; private set; }
         public bool       Loading    { get; private set; }
-
 
         private          AudioSource   _currentSource;
         private          AudioSource   _previousSource;
@@ -31,20 +29,16 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             GameService.GameIntegration.Gw2Instance.Gw2LostFocus     += OnGw2LostFocus;
             GameService.GameIntegration.Gw2Instance.Gw2AcquiredFocus += OnGw2AcquiredFocus;
             GameService.GameIntegration.Gw2Instance.Gw2Closed        += OnGw2Closed;
-
-            MusicMixer.Instance.ModuleConfig.SettingChanged += OnModuleConfigChanged;
-        }
-
-        private void OnModuleConfigChanged(object sender, ValueChangedEventArgs<ModuleConfig> e) {
-            AudioTrack?.Invalidate();
         }
 
         public async Task Play(AudioSource source) {
             if (this.Loading || source == null || source.IsEmpty) {
                 return;
             }
+            this.Loading = true;
 
             if (string.IsNullOrEmpty(source.PageUrl)) {
+                this.Loading = false;
                 return;
             }
 
@@ -55,53 +49,49 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             
             _currentSource = source;
             await TryPlay(source);
+            this.Loading = false;
         }
 
         private async Task<bool> TryPlay(AudioSource source) {
-            this.Loading = true;
+            // Making sure WasApiOut is initialized in main synchronization context. Otherwise it will fail.
+            // https://github.com/naudio/NAudio/issues/425
+            return await Task.Factory.StartNew(async () => {
 
-            try {
-                // Making sure WasApiOut is initialized in main synchronization context. Otherwise it will fail.
-                // https://github.com/naudio/NAudio/issues/425
-                return await Task.Factory.StartNew(async () => {
+                var track = await AudioTrack.TryGetStream(source);
 
-                    var track = await AudioTrack.TryGetStream(source);
+                if (track.IsEmpty || MusicMixer.Instance == null 
+                                  || MusicMixer.Instance.Gw2State == null 
+                                  || source.State != MusicMixer.Instance.Gw2State.CurrentState) {
+                    track.Dispose();
+                    return false;
+                }
 
-                    if (track.IsEmpty || MusicMixer.Instance == null 
-                                      || MusicMixer.Instance.Gw2State == null 
-                                      || source.State != MusicMixer.Instance.Gw2State.CurrentState) {
-                        track.Dispose();
-                        return false;
-                    }
+                if (!this.AudioTrack.IsEmpty) {
+                    this.AudioTrack.Finished -= OnSoundtrackFinished;
+                    await this.AudioTrack.DisposeAsync();
+                }
 
-                    if (!this.AudioTrack.IsEmpty) {
-                        this.AudioTrack.Finished -= OnSoundtrackFinished;
-                        await this.AudioTrack.DisposeAsync();
-                    }
+                if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
+                    AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 0.1f);
+                }
 
-                    if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
-                        AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 0.1f);
-                    }
+                this.AudioTrack          =  track;
+                this.AudioTrack.Finished += OnSoundtrackFinished;
 
-                    this.AudioTrack          =  track;
-                    this.AudioTrack.Finished += OnSoundtrackFinished;
+                await this.AudioTrack.Play();
 
-                    await this.AudioTrack.Play();
+                if (MusicMixer.Instance.ModuleConfig.Value.Paused) {
+                    this.AudioTrack.Pause();
+                }
 
-                    MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
+                MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
 
-                    return true;
-                }, CancellationToken.None, TaskCreationOptions.None, _scheduler).Unwrap();
-            } finally {
-                this.Loading = false;
-            }
+                return true;
+            }, CancellationToken.None, TaskCreationOptions.None, _scheduler).Unwrap();
         }
 
-        public void Stop()
-        {
-            if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
-                AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 1);
-            }
+        public void Stop() {
+            ResetVolume();
 
             this.AudioTrack?.Dispose();
             this.AudioTrack = AudioTrack.Empty;
@@ -109,9 +99,15 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
         }
 
-        private async void OnSoundtrackFinished(object o, EventArgs e)
-        {
-            _currentSource = null;
+        private void ResetVolume() {
+            if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
+                AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 1);
+            }
+        }
+
+        private async void OnSoundtrackFinished(object o, EventArgs e) {
+            _currentSource = AudioSource.Empty;
+            MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
             await ChangeContext(MusicMixer.Instance.Gw2State.CurrentState);
         }
 
@@ -146,16 +142,12 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 return true; // Song is already active
             }
 
-            if (await TryPlay(_previousSource)) {
-                this.AudioTrack?.Seek(_interuptedAt);
-                return true;
-            };
-
-            return false;
+            await Play(_previousSource);
+            this.AudioTrack?.Seek(_interuptedAt);
+            return true;
         }
 
         public void Dispose() {
-            MusicMixer.Instance.ModuleConfig.SettingChanged          -= OnModuleConfigChanged;
             MusicMixer.Instance.Gw2State.IsSubmergedChanged          -= OnIsSubmergedChanged;
             MusicMixer.Instance.Gw2State.StateChanged                -= OnStateChanged;
             GameService.GameIntegration.Gw2Instance.Gw2LostFocus     -= OnGw2LostFocus;

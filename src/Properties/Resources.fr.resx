@@ -146,7 +146,6 @@
   </data>
   <data name="Link pasted. Checking..." xml:space="preserve">
     <value>Lien collé. Vérification...</value>
-    <comment>Fuzzy</comment>
   </data>
   <data name="Please wait." xml:space="preserve">
     <value>Veuillez patienter.</value>
@@ -232,5 +231,14 @@
   </data>
   <data name="Settings" xml:space="preserve">
     <value>Paramètres</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>Reprendre</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Continuer</value>
   </data>
 </root>

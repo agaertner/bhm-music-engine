@@ -11,7 +11,7 @@ namespace Nekres.Music_Mixer.Core.UI {
 
         private Effect _curvedBorder;
 
-        private AsyncTexture2D _texture;
+        public AsyncTexture2D Texture;
 
         private SpriteBatchParameters _defaultParams;
         private SpriteBatchParameters _curvedBorderParams;
@@ -19,14 +19,12 @@ namespace Nekres.Music_Mixer.Core.UI {
         private float _radius = 0.215f;
         private Tween _tween;
 
-        public RoundedImage(AsyncTexture2D texture) {
+        public RoundedImage() {
             _defaultParams = new();
             _curvedBorder  = MusicMixer.Instance.ContentsManager.GetEffect<Effect>(@"effects\curvedborder.mgfx");
             _curvedBorderParams = new() {
                 Effect = _curvedBorder
             };
-            _texture = texture;
-
             //_curvedBorder.Parameters["Smooth"].SetValue(false); // Disable anti-aliasing
         }
 
@@ -48,7 +46,7 @@ namespace Nekres.Music_Mixer.Core.UI {
         }
 
         protected override void Paint(SpriteBatch spriteBatch, Rectangle bounds) {
-            if (!_texture.HasTexture || !_texture.HasSwapped) {
+            if (Texture == null || !Texture.HasTexture || !Texture.HasSwapped) {
                 LoadingSpinnerUtil.DrawLoadingSpinner(this, spriteBatch, new Rectangle((bounds.Width - 32) / 2, (bounds.Height - 32) / 2, 32, 32));
                 return;
             }
@@ -58,7 +56,7 @@ namespace Nekres.Music_Mixer.Core.UI {
 
             spriteBatch.End();
             spriteBatch.Begin(_curvedBorderParams);
-            spriteBatch.DrawOnCtrl(this, _texture, new Rectangle(0, 0, this.Width, this.Height));
+            spriteBatch.DrawOnCtrl(this, Texture, new Rectangle(0, 0, this.Width, this.Height));
             spriteBatch.End();
             spriteBatch.Begin(_defaultParams);
         }

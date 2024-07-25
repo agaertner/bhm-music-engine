@@ -104,7 +104,6 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 MusicMixer.Instance.Data.Upsert(_playlist);
 
                 AddBgmEntry(source, _tracksPanel);
-
                 GameService.Content.PlaySoundEffectByName("select-skill");
 
             } catch (Exception e) {
@@ -239,18 +238,20 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                     Left = buildPanel.ContentRegion.Width
                 };
 
-                var thumbnail = new RoundedImage(_audioSource.Thumbnail) {
-                    Parent = slidePanel,
-                    Width = 192, // 16:9
-                    Height = 108
+                var thumbnail = new RoundedImage {
+                    Parent  = slidePanel,
+                    Width   = 192, // 16:9
+                    Height  = 108,
+                    Texture = _audioSource.Thumbnail,
                 };
 
-                thumbnail.Click += (_,_) => {
+                thumbnail.Click += async (_,_) => {
                     if (string.IsNullOrWhiteSpace(_audioSource.PageUrl)) {
                         ScreenNotification.ShowNotification(Resources.Page_Not_Found_, ScreenNotification.NotificationType.Error);
                         GameService.Content.PlaySoundEffectByName("error");
                     } else {
-                        Process.Start(_audioSource.PageUrl);
+                        //Process.Start(_audioSource.PageUrl);
+                        await MusicMixer.Instance.Audio.Play(_audioSource);
                         GameService.Content.PlaySoundEffectByName("open-skill-slot");
                     }
                 };
