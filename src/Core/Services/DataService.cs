@@ -27,12 +27,11 @@ namespace Nekres.Music_Mixer.Core.Services {
         private          ManualResetEvent     _lockReleased = new(false);
         private          bool                 _lockAcquired = false;
 
-        private const string TBL_PLAYLISTS       = "playlists";
-        public const string TBL_AUDIO_SOURCES    = "audio_sources";
+        private const string TBL_PLAYLISTS        = "playlists";
+        public const  string TBL_AUDIO_SOURCES    = "audio_sources";
         private const string TBL_THUMBNAILS       = "thumbnails";
         private const string TBL_THUMBNAIL_CHUNKS = "thumbnail_chunks";
-
-        private const string LITEDB_FILENAME = "music.db";
+        private const string LITEDB_FILENAME      = "music.db";
 
         public DataService() {
             _connectionString = new ConnectionString {
@@ -54,6 +53,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                                                                  Url   = x.PageUrl,
                                                                  DayCycle = (int)x.DayCycles
                                                              }).ToList()}).ToList();
+                tracklists.RemoveAll(x => !x.Tracks.Any());
                 return JsonConvert.SerializeObject(tracklists);
 
             } catch (Exception e) {
@@ -82,7 +82,9 @@ namespace Nekres.Music_Mixer.Core.Services {
                 PageUrl    = data.Url,
                 Duration   = data.Duration,
                 Volume     = 1,
-                DayCycles = (AudioSource.DayCycle)track.DayCycle
+                DayCycles  = Enum.IsDefined(typeof(AudioSource.DayCycle), track.DayCycle) 
+                                 ? (AudioSource.DayCycle)track.DayCycle 
+                                 : AudioSource.DayCycle.Day | AudioSource.DayCycle.Night
             };
         }
 

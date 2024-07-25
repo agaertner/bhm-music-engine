@@ -165,10 +165,20 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         public void Invalidate() {
-            if (IsEmpty || _disposing || _volumeProvider == null || Source == null) {
+            if (IsEmpty || _disposing || Source == null) {
                 return;
             }
-            _volumeProvider.Volume = AudioUtil.GetNormalizedVolume(Source.Volume * 2, MusicMixer.Instance.MasterVolume);
+            if (GameService.GameIntegration.Audio.Volume == 0) {
+                SetVolume(0);
+                return;
+            }
+            SetVolume(AudioUtil.GetNormalizedVolume(Source.Volume * 2, MusicMixer.Instance.MasterVolume));
+        }
+
+        private void SetVolume(float volume) {
+            if (_volumeProvider != null) {
+                _volumeProvider.Volume = volume;
+            }
         }
 
         public void Seek(float seconds)

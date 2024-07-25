@@ -68,6 +68,17 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
             }
         }
 
+        private bool _paused;
+        [JsonProperty("paused")]
+        public bool Paused {
+            get => _paused;
+            set {
+                if (SetProperty(ref _paused, value)) {
+                    this.SaveConfig(MusicMixer.Instance.ModuleConfig);
+                }
+            }
+        }
+
         protected override void BindingChanged() {
             SaveConfig(MusicMixer.Instance.ModuleConfig);
         }

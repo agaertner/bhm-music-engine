@@ -51,6 +51,8 @@ namespace Nekres.Music_Mixer {
 
         private TabbedWindow2 _moduleWindow;
         private CornerIcon    _cornerIcon;
+        private ProgressTotal _moduleProgress;
+        private Tab           _settingsTab;
 
         // Textures
         private Texture2D _cornerTexture;
@@ -66,9 +68,13 @@ namespace Nekres.Music_Mixer {
         public MusicMixer([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters) { Instance = this; }
 
         protected override void DefineSettings(SettingCollection settings) {
-            settings.RenderInUi = false;
+            settings.RenderInUi = false; // Does not work on root settings collection. Replacing entire view instead (see below).
             ModuleConfig        = settings.DefineSetting("module_config", Core.UI.Settings.ModuleConfig.Default);
             InitialLoad         = settings.DefineSetting("initial_load",  true);
+        }
+
+        public override IView GetSettingsView() {
+            return new CustomSettingsView();
         }
 
         protected override void Initialize() {
@@ -87,16 +93,11 @@ namespace Nekres.Music_Mixer {
 
         protected override void Update(GameTime gameTime) {
             this.Gw2State.Update();
-
-            if (GameService.GameIntegration.Audio.Volume == 0) {
-                this.Audio?.Pause();
-            } else {
-                this.Audio?.Resume();
-            }
+            this.Audio.AudioTrack?.Invalidate();
         }
 
         public ProgressTotal GetModuleProgressHandler() {
-            return new ProgressTotal(UpdateModuleLoading);
+            return _moduleProgress ??= new ProgressTotal(UpdateModuleLoading);
         }
 
         private void UpdateModuleLoading(string loadingMessage) {
@@ -107,10 +108,6 @@ namespace Nekres.Music_Mixer {
             _cornerIcon.LoadingMessage = loadingMessage;
         }
 
-        public override IView GetSettingsView() {
-            return new ModuleSettingsView(this.ModuleConfig.Value);
-        }
-
         protected override async Task LoadAsync() {
             var progress = GetModuleProgressHandler();
             await YtDlp.Update(progress);
@@ -118,6 +115,10 @@ namespace Nekres.Music_Mixer {
             if (InitialLoad.Value) {
                 ScreenNotification.ShowNotification($"{Resources.New_database_created_} {Resources.Importing_default_playlists_}");
                 var defaultMusic = await DEFAULT_MUSIC_URL.GetJsonAsync<List<Tracklist>>();
+                if (defaultMusic == null) {
+                    progress.Report(null);
+                    return;
+                }
                 progress.Total = defaultMusic.SelectMany(x => x.Tracks).Count();
                 foreach (var tracklist in defaultMusic) {
                     await Data.LoadTracklist(tracklist, progress);
@@ -153,7 +154,7 @@ namespace Nekres.Music_Mixer {
             };
 
             _mountTabIcon = ContentsManager.GetTexture("tabs/raptor.png");
-            var mountTab = new Tab(_mountTabIcon, () => new MountPlaylistsView(), Resources.Mounted);
+            var mountTab = new Tab(_mountTabIcon, () => new NpLibraryWrapperView(new MountPlaylistsView()), Resources.Mounted);
             _moduleWindow.Tabs.Add(mountTab);
 
             _defeatedIcon = ContentsManager.GetTexture("tabs/downed_enemy.png");
@@ -164,9 +165,12 @@ namespace Nekres.Music_Mixer {
                         Tracks     = new List<AudioSource>()
                     };
                 }
-                return new BgmLibraryView(context, Resources.Defeated);
+                return new NpLibraryWrapperView(new BgmLibraryView(context, Resources.Defeated));
             }, Resources.Defeated);
             _moduleWindow.Tabs.Add(defeatedTab);
+
+            _settingsTab = new Tab(GameService.Content.DatAssetCache.GetTextureFromAssetId(155052), () => new ModuleSettingsView(this.ModuleConfig.Value), Resources.Settings);
+            _moduleWindow.Tabs.Add(_settingsTab);
 
             _cornerIcon.LeftMouseButtonReleased += OnModuleIconClick;
 
@@ -184,9 +188,16 @@ namespace Nekres.Music_Mixer {
             _moduleWindow.Subtitle = e.NewValue.Name;
         }
 
-        public void OnModuleIconClick(object o, MouseEventArgs e)
-        {
+        private void OnModuleIconClick(object o, MouseEventArgs e) {
             _moduleWindow?.ToggleWindow();
+        }
+
+        internal void ShowSettings() {
+            if (_moduleWindow == null) {
+                return;
+            }
+            _moduleWindow.Show();
+            _moduleWindow.SelectedTab = _settingsTab;
         }
 
         /// <inheritdoc />

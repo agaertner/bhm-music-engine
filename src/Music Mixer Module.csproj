@@ -71,10 +71,15 @@
     <Compile Include="Core\Services\Data\DbEntity.cs" />
     <Compile Include="Core\UI\KeyValueDropdown[T].cs" />
     <Compile Include="Core\UI\Library\BgmLibrary.cs" />
+    <Compile Include="Core\UI\Library\NowPlayingView.cs" />
+    <Compile Include="Core\UI\Library\NpLibraryWrapperView.cs" />
     <Compile Include="Core\UI\Playlists\MountPlaylistsView.cs" />
+    <Compile Include="Core\UI\RoundedImage.cs" />
     <Compile Include="Core\UI\Settings\ConfigBase.cs" />
     <Compile Include="Core\UI\Settings\ModuleConfig.cs" />
     <Compile Include="Core\UI\Settings\ModuleSettingsView.cs" />
+    <Compile Include="Core\UI\Settings\CustomSettingsView.cs" />
+    <Compile Include="Core\UI\SlidePanel.cs" />
     <Compile Include="Core\Utils\AudioUtil.cs" />
     <Compile Include="Core\Utils\ProgressTotal.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
@@ -204,7 +209,6 @@
     <Compile Include="Core\Utils\NTimer.cs" />
     <Compile Include="Core\Services\DataService.cs" />
     <Compile Include="Core\Services\Gw2StateService.cs" />
-    <Compile Include="Core\UI\TrackBarWithDraggingStopped.cs" />
     <Compile Include="MusicMixer.cs" />
     <Compile Include="Core\Services\YtDlpService.cs" />
     <Compile Include="Core\Services\Audio\AudioTrack.cs" />
