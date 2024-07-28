@@ -80,10 +80,6 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
                 await this.AudioTrack.Play();
 
-                if (MusicMixer.Instance.ModuleConfig.Value.Paused) {
-                    this.AudioTrack.Pause();
-                }
-
                 MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
 
                 return true;
