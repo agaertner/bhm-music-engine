@@ -94,6 +94,9 @@ namespace Nekres.Music_Mixer {
         protected override void Update(GameTime gameTime) {
             this.Gw2State.Update();
             this.Audio.AudioTrack?.Invalidate();
+            if (ModuleConfig.Value.Paused) {
+                this.Audio.Pause();
+            }
         }
 
         public ProgressTotal GetModuleProgressHandler() {
