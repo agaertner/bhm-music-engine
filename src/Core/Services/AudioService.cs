@@ -71,23 +71,20 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                     await this.AudioTrack.DisposeAsync();
                 }
 
-                if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
-                    AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 0.1f);
-                }
-
                 this.AudioTrack          =  track;
                 this.AudioTrack.Finished += OnSoundtrackFinished;
 
                 await this.AudioTrack.Play();
 
                 MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
+                SetGameVolume(0.1f);
 
                 return true;
             }, CancellationToken.None, TaskCreationOptions.None, _scheduler).Unwrap();
         }
 
         public void Stop() {
-            ResetVolume();
+            SetGameVolume(1);
 
             this.AudioTrack?.Dispose();
             this.AudioTrack = AudioTrack.Empty;
@@ -95,9 +92,9 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
         }
 
-        private void ResetVolume() {
+        private void SetGameVolume(float volume) {
             if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
-                AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 1);
+                AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, volume);
             }
         }
 
@@ -109,12 +106,20 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
         public void Pause()
         {
-            this.AudioTrack?.Pause();
+            if (this.AudioTrack == null || this.AudioTrack.IsEmpty) {
+                return;
+            }
+            this.AudioTrack.Pause();
+            SetGameVolume(1);
         }
 
         public void Resume()
         {
-            this.AudioTrack?.Resume();
+            if (this.AudioTrack == null || this.AudioTrack.IsEmpty) {
+                return;
+            }
+            this.AudioTrack.Resume();
+            SetGameVolume(0.1f);
         }
 
         public void SaveContext()

@@ -13,6 +13,7 @@ namespace Nekres.Music_Mixer {
 
         private static Glide.Tween             _animEase;
         private static List<SimpleAudioVolume> _volumes;
+        private static float                   _lastTargetVolume;
 
         public static float GetNormalizedVolume(float volume, float masterVolume) {
             if (volume >= masterVolume) {
@@ -28,10 +29,15 @@ namespace Nekres.Music_Mixer {
         /// <param name="targetVolume">The target volume between 0 and 1.</param>
         /// <param name="duration">Ease duration in seconds.</param>
         public static void SetVolume(int processId, float targetVolume, float duration = 2) {
+            if (Math.Abs(targetVolume - _lastTargetVolume) < 0.05f) {
+                return;
+            }
+            _lastTargetVolume = targetVolume;
+
             _animEase?.Cancel(); // Cancel previous ease.
             // (Do NOT use .CancelAndComplete()! A sudden volume spike can damage hearing!)
 
-            // Ensure disposal of old volumes as we cancel and possibly skip completion functions.
+            // Ensure disposal of old volumes as we cancel and skip completion functions.
             Dispose(_volumes); 
 
             // Retrieve new volumes in case new devices were plugged or process output has changed.
