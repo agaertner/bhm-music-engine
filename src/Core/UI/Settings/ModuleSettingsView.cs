@@ -30,6 +30,16 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
                 CanScroll = true
             };
 
+            var defaultUpdatesCbx = new Checkbox {
+                Parent  = flowPanel,
+                Text    = Resources.Automatically_update_default_music_,
+                Checked = _config.DefaultUpdates
+            };
+
+            defaultUpdatesCbx.CheckedChanged += (_, e) => {
+                _config.DefaultUpdates = e.Checked;
+            };
+
             var cbx = new Checkbox {
                 Parent  = flowPanel,
                 Text    = Resources.Mute_when_GW2_is_in_the_background,

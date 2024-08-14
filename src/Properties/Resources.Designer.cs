@@ -61,6 +61,15 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Automatically update default music..
+        /// </summary>
+        internal static string Automatically_update_default_music_ {
+            get {
+                return ResourceManager.GetString("Automatically update default music.", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Background Music.
         /// </summary>
         internal static string Background_Music {
@@ -192,6 +201,15 @@ namespace Nekres.Music_Mixer.Properties {
         internal static string New_database_created_ {
             get {
                 return ResourceManager.GetString("New database created.", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to New music available!.
+        /// </summary>
+        internal static string New_music_available_ {
+            get {
+                return ResourceManager.GetString("New music available!", resourceCulture);
             }
         }
         
@@ -399,6 +417,15 @@ namespace Nekres.Music_Mixer.Properties {
         internal static string Unsupported_website_ {
             get {
                 return ResourceManager.GetString("Unsupported website.", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Updating….
+        /// </summary>
+        internal static string Updating___ {
+            get {
+                return ResourceManager.GetString("Updating...", resourceCulture);
             }
         }
         

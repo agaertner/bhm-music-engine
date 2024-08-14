@@ -10,7 +10,8 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
             _useCustomOutputDevice = false,
             _masterVolume = 0.5f,
             _averageBitrate = YtDlpService.AudioBitrate.B320,
-            _muteWhenInBackground = true
+            _muteWhenInBackground = true,
+            _defaultUpdates = true
         };
 
         private bool _useCustomOutputDevice;
@@ -63,6 +64,17 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
             get => _muteWhenInBackground;
             set {
                 if (SetProperty(ref _muteWhenInBackground, value)) {
+                    this.SaveConfig(MusicMixer.Instance.ModuleConfig);
+                }
+            }
+        }
+
+        private bool _defaultUpdates;
+        [JsonProperty("default_updates")]
+        public bool DefaultUpdates {
+            get => _defaultUpdates;
+            set {
+                if (SetProperty(ref _defaultUpdates, value)) {
                     this.SaveConfig(MusicMixer.Instance.ModuleConfig);
                 }
             }
