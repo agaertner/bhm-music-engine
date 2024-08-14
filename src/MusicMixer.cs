@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
+using Blish_HUD.Extended;
 
 namespace Nekres.Music_Mixer {
 
@@ -40,7 +41,7 @@ namespace Nekres.Music_Mixer {
         #endregion
 
         internal SettingEntry<ModuleConfig> ModuleConfig;
-        internal SettingEntry<bool>         InitialLoad;
+        internal SettingEntry<DateTime>     DefaultUpdate;
 
         public string ModuleDirectory { get; private set; }
 
@@ -62,7 +63,8 @@ namespace Nekres.Music_Mixer {
         private  float _prevMasterVol;
         internal float MasterVolume => ModuleConfig.Value == null ? _prevMasterVol : _prevMasterVol = ModuleConfig.Value.MasterVolume;
 
-        private const string DEFAULT_MUSIC_URL = "https://github.com/agaertner/bhm-music-engine/raw/main/default_music.json";
+        private const string DEFAULT_MUSIC_CHECK_URL = "https://api.github.com/repos/agaertner/bhm-music-engine/commits?path=default_music.json&page=1&per_page=1";
+        private const string DEFAULT_MUSIC_URL       = "https://github.com/agaertner/bhm-music-engine/raw/main/default_music.json";
 
         [ImportingConstructor]
         public MusicMixer([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters) { Instance = this; }
@@ -70,7 +72,7 @@ namespace Nekres.Music_Mixer {
         protected override void DefineSettings(SettingCollection settings) {
             settings.RenderInUi = false; // Does not work on root settings collection. Replacing entire view instead (see below).
             ModuleConfig        = settings.DefineSetting("module_config", Core.UI.Settings.ModuleConfig.Default);
-            InitialLoad         = settings.DefineSetting("initial_load",  true);
+            DefaultUpdate       = settings.DefineSetting("default_update",  DateTime.MinValue);
         }
 
         public override IView GetSettingsView() {
@@ -115,19 +117,45 @@ namespace Nekres.Music_Mixer {
             var progress = GetModuleProgressHandler();
             await YtDlp.Update(progress);
 
-            if (InitialLoad.Value) {
-                ScreenNotification.ShowNotification($"{Resources.New_database_created_} {Resources.Importing_default_playlists_}");
-                var defaultMusic = await DEFAULT_MUSIC_URL.GetJsonAsync<List<Tracklist>>();
-                if (defaultMusic == null) {
+            if (ModuleConfig.Value.DefaultUpdates) {
+                var version   = BlishUtil.GetVersion();
+                var userAgent = string.IsNullOrEmpty(version) ? "Blish HUD" : version;
+
+                var commitDate = await TaskUtil.TryAsync(() => DEFAULT_MUSIC_CHECK_URL.WithHeader("User-Agent", userAgent).GetJsonListAsync(), Logger)
+                                               .ContinueWith(t => {
+                                                    var result = DateTime.MinValue;
+                                                    if (t.IsCanceled || t.IsFaulted || t.Result == null) {
+                                                        return result;
+                                                    }
+                                                    try {
+                                                        result = DateTime.Parse(Convert.ToString(t.Result[0].commit.committer.date));
+                                                    } catch (Exception e) {
+                                                        Logger.Warn(e, "Unexpected GitHub API response.");
+                                                    }
+                                                    return result;
+                                                });
+
+                if (commitDate > DefaultUpdate.Value) {
+                    ScreenNotification.ShowNotification($"{Resources.New_music_available_} {Resources.Updating___}");
+                    var defaultMusic = await DEFAULT_MUSIC_URL.GetJsonAsync<List<Tracklist>>();
+
+                    if (defaultMusic == null) {
+                        progress.Report(null);
+                        return;
+                    }
+
+                    progress.Total = defaultMusic.SelectMany(x => x.Tracks).Count();
+
+                    ScreenNotification.ShowNotification($"{Resources.Importing_default_playlists_}");
+
+                    foreach (var tracklist in defaultMusic) {
+                        await Data.LoadTracklist(tracklist, progress);
+                    }
+
                     progress.Report(null);
-                    return;
+
+                    DefaultUpdate.Value = commitDate; // Save latest commit date.
                 }
-                progress.Total = defaultMusic.SelectMany(x => x.Tracks).Count();
-                foreach (var tracklist in defaultMusic) {
-                    await Data.LoadTracklist(tracklist, progress);
-                }
-                progress.Report(null);
-                InitialLoad.Value = false;
             }
         }
 

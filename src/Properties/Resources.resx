@@ -241,4 +241,13 @@
   <data name="Continue" xml:space="preserve">
     <value>Continue</value>
   </data>
+  <data name="New music available!" xml:space="preserve">
+    <value>New music available!</value>
+  </data>
+  <data name="Updating..." xml:space="preserve">
+    <value>Updating…</value>
+  </data>
+  <data name="Automatically update default music." xml:space="preserve">
+    <value>Automatically update default music.</value>
+  </data>
 </root>
