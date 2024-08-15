@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 
 namespace Nekres.Music_Mixer.Core.Services.Data {
@@ -18,6 +19,12 @@ namespace Nekres.Music_Mixer.Core.Services.Data {
 
             [JsonProperty("daytime")]
             public int DayCycle { get; set; }
+
+            [JsonProperty("duration")]
+            public TimeSpan Duration { get; set; }
+
+            [JsonProperty("removed")]
+            public bool Removed { get; set; }
         }
     }
 }

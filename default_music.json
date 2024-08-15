@@ -5,7 +5,23 @@
             {
                 "title": "Riding - Day (The Legend of Zelda: Breath of the Wild OST)",
                 "url": "https://www.youtube.com/watch?v=FhXoJKoUuXE",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:01:54",
+                "removed": false
+            },
+            {
+                "title": "Turbo Trainers | Banjo-Kazooie",
+                "url": "https://www.youtube.com/watch?v=jCyrkrt3-7s",
+                "daytime": 15,
+                "duration": "00:00:52",
+                "removed": false
+            },
+            {
+                "title": "Bee Chase - Animal Crossing: New Horizons Music",
+                "url": "https://www.youtube.com/watch?v=gJtQUfLQ0SA",
+                "daytime": 15,
+                "duration": "00:00:21",
+                "removed": false
             }
         ]
     },
@@ -15,17 +31,23 @@
             {
                 "title": "WolfQuest OST • 02 • Exploration",
                 "url": "https://www.youtube.com/watch?v=HuNiCKks8MA",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:03:52",
+                "removed": false
             },
             {
                 "title": "WolfQuest OST • 03 • The Chase",
                 "url": "https://www.youtube.com/watch?v=hwd7FFaabnM",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:01:56",
+                "removed": false
             },
             {
                 "title": "Gerudo Valley Remix | Super Smash Bros. Ultimate",
                 "url": "https://www.youtube.com/watch?v=c0y9SDiihBY",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:03:51",
+                "removed": false
             }
         ]
     },
@@ -35,27 +57,37 @@
             {
                 "title": "FFXIV OST Mount BGM ( The Rider's Boon )",
                 "url": "https://www.youtube.com/watch?v=YSRbX9bztpk",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:03:00",
+                "removed": false
             },
             {
                 "title": "FINAL FANTASY XV OST Cape Caem",
                 "url": "https://www.youtube.com/watch?v=rUwIgD1CA_8",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:03:36",
+                "removed": false
             },
             {
                 "title": "Surfing (Pokémon Omega Ruby & Alpha Sapphire OST)",
                 "url": "https://www.youtube.com/watch?v=8VRZo_MU5w8",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:02:43",
+                "removed": false
             },
             {
                 "title": "Super Mario 64 - Water Theme / Dire Dire Docks - HD",
                 "url": "https://www.youtube.com/watch?v=RRfHbyCQDCo",
-                "daytime": 12
+                "daytime": 12,
+                "duration": "00:03:08",
+                "removed": false
             },
             {
                 "title": "Bicycle Theme (Pokémon Omega Ruby & Alpha Sapphire OST)",
                 "url": "https://www.youtube.com/watch?v=7_DhBuEOovk",
-                "daytime": 3
+                "daytime": 3,
+                "duration": "00:01:51",
+                "removed": false
             }
         ]
     },
@@ -65,12 +97,16 @@
             {
                 "title": "FFXIV OST/\"\" /Amaro Mount Theme  \"On Our Fates Alight\"FF14/FFXIVBGM Only",
                 "url": "https://www.youtube.com/watch?v=QkVaSVgTWfs",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:08:05",
+                "removed": false
             },
             {
                 "title": "The Sky Theme - The Legend of Zelda: Skyward Sword",
                 "url": "https://www.youtube.com/watch?v=wDbyzcfBEu0",
-                "daytime": 3
+                "daytime": 3,
+                "duration": "00:04:36",
+                "removed": false
             }
         ]
     },
@@ -80,17 +116,23 @@
             {
                 "title": "FFXIV OST The Churning Mists Night Theme ( Skylords )",
                 "url": "https://www.youtube.com/watch?v=FrsES6HfiwI",
-                "daytime": 12
+                "daytime": 12,
+                "duration": "00:04:30",
+                "removed": false
             },
             {
                 "title": "FFXIV OST Dravanian Hinterlands Day Theme ( Missing Pages )",
                 "url": "https://www.youtube.com/watch?v=W17RdW_M4p8",
-                "daytime": 3
+                "daytime": 3,
+                "duration": "00:03:08",
+                "removed": false
             },
             {
                 "title": "FFXIV OST Ishgard Day Theme ( Solid )",
                 "url": "https://www.youtube.com/watch?v=Kcw8xNxkZtM",
-                "daytime": 3
+                "daytime": 3,
+                "duration": "00:05:24",
+                "removed": false
             }
         ]
     },
@@ -100,32 +142,44 @@
             {
                 "title": "Ktisis Hyperboreia Theme \"Miracle Works\" - FFXIV OST",
                 "url": "https://www.youtube.com/watch?v=BUwKOdJIyds",
-                "daytime": 12
+                "daytime": 12,
+                "duration": "00:09:45",
+                "removed": false
             },
             {
                 "title": "Interstate 76 Intro",
                 "url": "https://www.youtube.com/watch?v=3JCGZFQZkdc",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:01:00",
+                "removed": false
             },
             {
                 "title": "Big Blue [Remix] - Super Smash Bros. Ultimate",
                 "url": "https://www.youtube.com/watch?v=XTYHopsf5gM",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:04:15",
+                "removed": false
             },
             {
                 "title": "Sonic the Hedgehog - Green Hill Zone [Remix]",
                 "url": "https://www.youtube.com/watch?v=oNC5SO4NhSk",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:02:26",
+                "removed": false
             },
             {
                 "title": "Mute City [Brawl] - Super Smash Bros. Ultimate",
                 "url": "https://www.youtube.com/watch?v=jW4NjJfPXtc",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:03:39",
+                "removed": false
             },
             {
                 "title": "Pokémon Omega Ruby & Alpha Sapphire - Zinnia Battle Music (HQ)",
                 "url": "https://www.youtube.com/watch?v=GIn8_Q27WFY",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:05:00",
+                "removed": false
             }
         ]
     },
@@ -135,7 +189,23 @@
             {
                 "title": "FFXIV OST  Namazu Beast Tribe Theme ( Seven Hundred Seventy-Seven Whiskers )",
                 "url": "https://www.youtube.com/watch?v=NQsGrEakzqw",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:03:55",
+                "removed": false
+            },
+            {
+                "title": "[Music] Okami - Susano Goes for a Ride",
+                "url": "https://www.youtube.com/watch?v=XppI-xqCccE",
+                "daytime": 15,
+                "duration": "00:01:39",
+                "removed": false
+            },
+            {
+                "title": "[Music] Okami - Tama's Theme",
+                "url": "https://www.youtube.com/watch?v=IL_NMd6TNQQ",
+                "daytime": 15,
+                "duration": "00:01:22",
+                "removed": false
             }
         ]
     },
@@ -145,62 +215,93 @@
             {
                 "title": "Luna's Fishing Garden - Full Soundtrack",
                 "url": "https://www.youtube.com/watch?v=tFQRFWqn7bw",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:09:27",
+                "removed": false
             },
             {
                 "title": "Nintendo 3DS - AR Games - Fish Gallery Theme",
                 "url": "https://www.youtube.com/watch?v=alhaDRKqGbk",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:02:44",
+                "removed": false
             },
             {
                 "title": "Top Anglers: Super Fishing Big Fight 2 - BGM 15",
                 "url": "https://www.youtube.com/watch?v=IPG4ruk-nk8",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:02:27",
+                "removed": false
             },
             {
                 "title": "Reel Fishing: Wild OST - Track 03 (Dreamcast)",
                 "url": "https://www.youtube.com/watch?v=oI-3I17GBP0",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:01:15",
+                "removed": false
             },
             {
                 "title": "FINAL FANTASY XV OST Goldin Quay Theme",
                 "url": "https://www.youtube.com/watch?v=gA_bd-zoxyQ",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:03:48",
+                "removed": false
             },
             {
                 "title": "Final Fantasy XV OST - Hammerhead (Video CD 1080)",
                 "url": "https://www.youtube.com/watch?v=et5LTXh9ovQ",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:04:37",
+                "removed": false
             },
             {
                 "title": "FINAL FANTASY XV OST Relax and Reflect",
                 "url": "https://www.youtube.com/watch?v=EjoWEtMB_To",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:03:14",
+                "removed": false
             },
             {
                 "title": "FINAL FANTASY XV OST A Quick Pitstop",
                 "url": "https://www.youtube.com/watch?v=3JKGLHwNfn8",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:03:41",
+                "removed": false
             },
             {
                 "title": "FINAL FANTASY XV OST Boat Theme ( Over the Waves )",
                 "url": "https://www.youtube.com/watch?v=4Jv-aVocjyo",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:03:57",
+                "removed": false
             },
             {
                 "title": "The Great Sea - The Legend of Zelda: The Wind Waker",
                 "url": "https://www.youtube.com/watch?v=pgFM0Ib0i4E",
-                "daytime": 3
+                "daytime": 3,
+                "duration": "00:02:40",
+                "removed": false
             },
             {
                 "title": "Tournament (Joining) - Animal Crossing: New Horizons (OST)",
                 "url": "https://www.youtube.com/watch?v=GBMY28suYnY",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:02:47",
+                "removed": false
             },
             {
                 "title": "Animal Crossing: New Horizons - Bug Off (Arrangement)",
                 "url": "https://www.youtube.com/watch?v=vTOdPeBe_Rc",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:02:26",
+                "removed": false
+            },
+            {
+                "title": "[Music] Okami - Constellation (Rejuvenation)",
+                "url": "https://www.youtube.com/watch?v=vq9v2aETJ9w",
+                "daytime": 12,
+                "duration": "00:00:51",
+                "removed": false
             }
         ]
     },
@@ -210,7 +311,16 @@
             {
                 "title": "Fatter Cat (Fat Cat Mount) Showcase - FFXIV",
                 "url": "https://www.youtube.com/watch?v=t94WEPguiZ8",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:01:29",
+                "removed": false
+            },
+            {
+                "title": "[Music] Okami - Issun's Theme",
+                "url": "https://www.youtube.com/watch?v=Knu3mIwdNXQ",
+                "daytime": 15,
+                "duration": "00:01:09",
+                "removed": false
             }
         ]
     },
@@ -220,7 +330,9 @@
             {
                 "title": "Shishioji Mount Theme | Crimson Rise Soken Remix | 6.45 OST",
                 "url": "https://www.youtube.com/watch?v=7infPY68ICk",
-                "daytime": 15
+                "daytime": 15,
+                "duration": "00:08:21",
+                "removed": false
             }
         ]
     }

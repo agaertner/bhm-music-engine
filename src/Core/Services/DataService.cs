@@ -49,9 +49,10 @@ namespace Nekres.Music_Mixer.Core.Services {
                                            ExternalId = playlist.ExternalId,
                                            Tracks = playlist.Tracks.Where(x => !string.IsNullOrEmpty(x.PageUrl))
                                                             .Select(x => new Tracklist.Track {
-                                                                 Title = x.Title,
-                                                                 Url   = x.PageUrl,
-                                                                 DayCycle = (int)x.DayCycles
+                                                                 Title    = x.Title,
+                                                                 Url      = x.PageUrl,
+                                                                 DayCycle = (int)x.DayCycles,
+                                                                 Duration = x.Duration
                                                              }).ToList()}).ToList();
                 tracklists.RemoveAll(x => !x.Tracks.Any());
                 return JsonConvert.SerializeObject(tracklists);
@@ -68,19 +69,20 @@ namespace Nekres.Music_Mixer.Core.Services {
         }
 
         private async Task<AudioSource> FetchSource(Tracklist.Track track) {
-            var data = await MusicMixer.Instance.YtDlp.GetMetaData(track.Url);
-
-            if (data.IsError) {
-                MusicMixer.Logger.Warn($"Faulty metadata or obsolete media URL: {track.Url}");
-                return AudioSource.Empty;
-            }
-
+            var externalId = string.Empty;
+            if (!MusicMixer.Instance.YtDlp.GetYouTubeVideoId(track.Url, out externalId)) {
+                var data = await MusicMixer.Instance.YtDlp.GetMetaData(track.Url);
+                if (data.IsError) {
+                    MusicMixer.Logger.Warn($"Faulty metadata or obsolete media URL: {track.Url}");
+                    return AudioSource.Empty;
+                }
+                externalId = data.Id;
+            };
             return new AudioSource {
-                ExternalId = data.Id,
-                Uploader   = data.Uploader,
-                Title      = data.Title,
-                PageUrl    = data.Url,
-                Duration   = data.Duration,
+                ExternalId = externalId,
+                Title      = track.Title,
+                PageUrl    = track.Url,
+                Duration   = track.Duration,
                 Volume     = 1,
                 DayCycles  = Enum.IsDefined(typeof(AudioSource.DayCycle), track.DayCycle) 
                                  ? (AudioSource.DayCycle)track.DayCycle 
@@ -100,9 +102,18 @@ namespace Nekres.Music_Mixer.Core.Services {
             foreach (var track in list.Tracks) {
                 progress?.Report(track.Title, true);
                 var toImport = await FetchSource(track);
-                if (playlist.Tracks.Any(x => string.Equals(x.ExternalId, toImport.ExternalId))) {
+                var dbEntry  = playlist.Tracks.FirstOrDefault(x => !string.IsNullOrEmpty(x.ExternalId) && x.ExternalId.Equals(toImport.ExternalId));
+                if (dbEntry != null) {
+                    if (track.Removed) {
+                        Remove(dbEntry);
+                    }
                     continue;
                 }
+
+                if (track.Removed) {
+                    continue;
+                }
+
                 Upsert(toImport);
                 playlist.Tracks.Add(toImport);
             }
