@@ -89,8 +89,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                         PageUrl    = data.Url,
                         Duration   = data.Duration,
                         Volume     = 1,
-                        DayCycles = AudioSource.DayCycle.Day |
-                                    AudioSource.DayCycle.Night
+                        DayCycles  = AudioSource.DayCycle.Day | AudioSource.DayCycle.Night
                     };
 
                     if (!MusicMixer.Instance.Data.Upsert(source)) {
@@ -214,6 +213,8 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                     ScreenNotification.ShowNotification(Resources.Something_went_wrong__Please_try_again_, ScreenNotification.NotificationType.Error);
                     GameService.Content.PlaySoundEffectByName("error");
                 }
+
+                MusicMixer.Instance.Data.Remove(source);
             };
 
             bgmEntryContainer.Show(bgmEntry);
