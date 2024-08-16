@@ -22,9 +22,6 @@ namespace Nekres.Music_Mixer.Core.Services.Data {
 
             [JsonProperty("duration")]
             public TimeSpan Duration { get; set; }
-
-            [JsonProperty("removed")]
-            public bool Removed { get; set; }
         }
     }
 }

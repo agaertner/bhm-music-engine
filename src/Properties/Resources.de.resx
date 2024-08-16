@@ -249,4 +249,10 @@
   <data name="Automatically update default music." xml:space="preserve">
     <value>Automatisch Standardmusik aktualisieren.</value>
   </data>
+  <data name="Done." xml:space="preserve">
+    <value>Fertig.</value>
+  </data>
+  <data name="{0} is ready." xml:space="preserve">
+    <value>{0} ist bereit.</value>
+  </data>
 </root>

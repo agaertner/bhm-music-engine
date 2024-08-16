@@ -60,6 +60,9 @@ namespace Nekres.Music_Mixer.Core.Services.Data {
         [BsonField("day_cycles")]
         public DayCycle DayCycles { get; set; }
 
+        [BsonField("default")]
+        public bool? Default { get; set; }
+
         private AsyncTexture2D _thumbnail;
         [BsonIgnore]
         public AsyncTexture2D Thumbnail {

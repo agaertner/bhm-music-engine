@@ -14,7 +14,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
-using System.Threading.Tasks;
 using Image = SixLabors.ImageSharp.Image;
 using MountType = Gw2Sharp.Models.MountType;
 
@@ -68,29 +67,7 @@ namespace Nekres.Music_Mixer.Core.Services {
             }
         }
 
-        private async Task<AudioSource> FetchSource(Tracklist.Track track) {
-            var externalId = string.Empty;
-            if (!MusicMixer.Instance.YtDlp.GetYouTubeVideoId(track.Url, out externalId)) {
-                var data = await MusicMixer.Instance.YtDlp.GetMetaData(track.Url);
-                if (data.IsError) {
-                    MusicMixer.Logger.Warn($"Faulty metadata or obsolete media URL: {track.Url}");
-                    return AudioSource.Empty;
-                }
-                externalId = data.Id;
-            };
-            return new AudioSource {
-                ExternalId = externalId,
-                Title      = track.Title,
-                PageUrl    = track.Url,
-                Duration   = track.Duration,
-                Volume     = 1,
-                DayCycles  = Enum.IsDefined(typeof(AudioSource.DayCycle), track.DayCycle) 
-                                 ? (AudioSource.DayCycle)track.DayCycle 
-                                 : AudioSource.DayCycle.Day | AudioSource.DayCycle.Night
-            };
-        }
-
-        public async Task LoadTracklist(Tracklist list, ProgressTotal progress) {
+        public void LoadTracklist(Tracklist list, ProgressTotal progress) {
             if (!GetPlaylist(list.ExternalId, out var playlist)) {
                 playlist = new Playlist {
                     ExternalId = list.ExternalId,
@@ -99,23 +76,41 @@ namespace Nekres.Music_Mixer.Core.Services {
                 };
             }
 
-            foreach (var track in list.Tracks) {
+            // Create sources from default list.
+            var defaults = list.Tracks.Select(track => {
+                if (!MusicMixer.Instance.YtDlp.GetYouTubeVideoId(track.Url, out string externalId)) {
+                    return AudioSource.Empty;
+                };
+
+                return new AudioSource {
+                    ExternalId = externalId,
+                    Title      = track.Title,
+                    PageUrl    = track.Url,
+                    Duration   = track.Duration,
+                    Volume     = 1,
+                    DayCycles = Enum.IsDefined(typeof(AudioSource.DayCycle), track.DayCycle)
+                                    ? (AudioSource.DayCycle)track.DayCycle
+                                    : AudioSource.DayCycle.Day | AudioSource.DayCycle.Night,
+                    Default    = true
+                };
+            }).Where(src => !src.IsEmpty);
+
+            // Remove DB entries that were automatically imported in the past but are no longer part of the default list.
+            var removed = playlist.Tracks.Where(x => x.Default.HasValue && x.Default.Value
+                                                                         && !string.IsNullOrEmpty(x.ExternalId)
+                                                                         && !defaults.Any(y => y.ExternalId.Equals(x.ExternalId)));
+            foreach (var src in removed) {
+                this.Remove(src); // Sadly LiteDB has problems converting complex Linq expressions to BsonExpressions so DeleteMany wouldn't work.
+            }
+            
+            // Import new default tracks.
+            foreach (var track in defaults) {
                 progress?.Report(track.Title, true);
-                var toImport = await FetchSource(track);
-                var dbEntry  = playlist.Tracks.FirstOrDefault(x => !string.IsNullOrEmpty(x.ExternalId) && x.ExternalId.Equals(toImport.ExternalId));
-                if (dbEntry != null) {
-                    if (track.Removed) {
-                        Remove(dbEntry);
-                    }
+                if (playlist.Tracks.Any(y => !string.IsNullOrEmpty(y.ExternalId) && y.ExternalId.Equals(track.ExternalId))) {
                     continue;
                 }
-
-                if (track.Removed) {
-                    continue;
-                }
-
-                Upsert(toImport);
-                playlist.Tracks.Add(toImport);
+                Upsert(track);
+                playlist.Tracks.Add(track);
             }
             Upsert(playlist);
         }
@@ -172,12 +167,16 @@ namespace Nekres.Music_Mixer.Core.Services {
         }
 
         public bool GetTrackByMediaId(string mediaId, out AudioSource source) {
+            if (string.IsNullOrEmpty(mediaId)) {
+                source = AudioSource.Empty;
+                return false;
+            }
             this.AcquireWriteLock();
             try {
                 using var db = new LiteDatabase(_connectionString);
 
                 var collection = db.GetCollection<AudioSource>(TBL_AUDIO_SOURCES);
-                source = collection.FindOne(x => x.ExternalId.Equals(mediaId));
+                source = collection.FindOne(x => mediaId.Equals(x.ExternalId));
                 return source != null;
             } finally {
                 this.ReleaseWriteLock();
@@ -237,6 +236,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                     Duration   = src.Duration,
                     Volume     = src.Volume,
                     DayCycles  = src.DayCycles,
+                    Default    = src.Default,
                     AudioUrl   = string.Empty
                 }, src => true);
             } finally {

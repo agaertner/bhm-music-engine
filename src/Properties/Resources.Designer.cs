@@ -61,6 +61,15 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0} is ready..
+        /// </summary>
+        internal static string _0__is_ready_ {
+            get {
+                return ResourceManager.GetString("{0} is ready.", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Automatically update default music..
         /// </summary>
         internal static string Automatically_update_default_music_ {
@@ -111,6 +120,15 @@ namespace Nekres.Music_Mixer.Properties {
         internal static string Defeated {
             get {
                 return ResourceManager.GetString("Defeated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Done..
+        /// </summary>
+        internal static string Done_ {
+            get {
+                return ResourceManager.GetString("Done.", resourceCulture);
             }
         }
         

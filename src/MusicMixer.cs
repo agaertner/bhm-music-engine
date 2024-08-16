@@ -1,5 +1,6 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Controls;
+using Blish_HUD.Extended;
 using Blish_HUD.Graphics.UI;
 using Blish_HUD.Input;
 using Blish_HUD.Modules;
@@ -21,7 +22,6 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
-using Blish_HUD.Extended;
 
 namespace Nekres.Music_Mixer {
 
@@ -146,15 +146,17 @@ namespace Nekres.Music_Mixer {
 
                     progress.Total = defaultMusic.SelectMany(x => x.Tracks).Count();
 
-                    ScreenNotification.ShowNotification($"{Resources.Importing_default_playlists_}");
+                    //ScreenNotification.ShowNotification($"{Resources.Importing_default_playlists_}");
 
-                    foreach (var tracklist in defaultMusic) {
-                        await Data.LoadTracklist(tracklist, progress);
+                    foreach (var tracklist in defaultMusic) { 
+                        Data.LoadTracklist(tracklist, progress);
                     }
 
                     progress.Report(null);
 
                     DefaultUpdate.Value = commitDate; // Save latest commit date.
+
+                    ScreenNotification.ShowNotification($"{Resources.Done_} {string.Format(Resources._0__is_ready_, this.Name)}");
                 }
             }
         }
