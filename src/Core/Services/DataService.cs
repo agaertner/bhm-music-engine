@@ -68,13 +68,11 @@ namespace Nekres.Music_Mixer.Core.Services {
         }
 
         public void LoadTracklist(Tracklist list, ProgressTotal progress) {
-            if (!GetPlaylist(list.ExternalId, out var playlist)) {
-                playlist = new Playlist {
-                    ExternalId = list.ExternalId,
-                    Enabled    = true,
-                    Tracks     = new List<AudioSource>()
-                };
-            }
+            Playlist playlist = GetPlaylist(list.ExternalId) ?? new Playlist {
+                ExternalId = list.ExternalId,
+                Enabled    = true,
+                Tracks     = new List<AudioSource>()
+            };
 
             // Create sources from default list.
             var defaults = list.Tracks.Select(track => {
@@ -183,29 +181,28 @@ namespace Nekres.Music_Mixer.Core.Services {
             }
         }
 
-        private bool GetPlaylist(string externalId, out Playlist playlist) {
+        private Playlist GetPlaylist(string externalId) {
             this.AcquireWriteLock();
             try {
                 using var db = new LiteDatabase(_connectionString);
 
                 var collection = db.GetCollection<Playlist>(TBL_PLAYLISTS);
-                playlist = collection.Include(x => x.Tracks).FindOne(x => x.ExternalId == externalId);
-                return playlist != null;
+                return collection.Include(x => x.Tracks).FindOne(x => x.ExternalId == externalId);
             } finally {
                 this.ReleaseWriteLock();
             }
         }
 
-        public bool GetMountPlaylist(MountType mountType, out Playlist playlist) {
-            return GetPlaylist(mountType.ToString(), out playlist);
+        public Playlist GetMountPlaylist(MountType mountType) {
+            return GetPlaylist(mountType.ToString());
         }
 
-        public bool GetDefeatedPlaylist(out Playlist context) {
-            return GetPlaylist("Defeated", out context);
+        public Playlist GetDefeatedPlaylist() {
+            return GetPlaylist("Defeated");
         }
 
-        public bool GetMapPlaylist(int mapId, out Playlist playlist) {
-            return GetPlaylist($"map_{mapId}", out playlist);
+        public Playlist GetMapPlaylist(int mapId) {
+            return GetPlaylist($"map_{mapId}");
         }
 
         public bool Remove(AudioSource model) {

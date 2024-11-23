@@ -1,6 +1,7 @@
 ﻿using Blish_HUD;
 using Nekres.Music_Mixer.Core.Services.Data;
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -180,55 +181,38 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         private async void OnStateChanged(object o, ValueChangedEventArgs<Gw2StateService.State> e) {
-            if (e.NewValue == Gw2StateService.State.StandBy) {
-                Stop();
-            }
-
-            switch (e.PreviousValue) {
-                case Gw2StateService.State.Mounted:
-                case Gw2StateService.State.Battle:
-                    Stop(); 
-                    break;
-            }
-
-            if (await PlayFromSave()) {
+            // Don't change song if already playing one for mounted.
+            if (MusicMixer.Instance.ModuleConfig.Value.PlayToCompletion 
+             && e.NewValue == Gw2StateService.State.Mounted 
+             && this.AudioTrack is {IsEmpty: false}) {
                 return;
             }
-
-            // Select new song if nothing is playing.
-            await ChangeContext(e.NewValue);
+            // Change song.
+            if (e.NewValue is Gw2StateService.State.Mounted or Gw2StateService.State.Defeated) {
+                if (await PlayFromSave()) {
+                    return;
+                }
+                await ChangeContext(e.NewValue);
+                return;
+            }
+            // Stop song if appropriate.
+            if (MusicMixer.Instance.ModuleConfig.Value.PlayToCompletion 
+             && e.PreviousValue == Gw2StateService.State.Mounted) {
+                return; // Continue playing when dismounting and play to completion is set.
+            }
+            Stop(); // Stop song when in standby or other states.
         }
 
         private async Task ChangeContext(Gw2StateService.State state) {
-            var dayCycle = (int)MusicMixer.Instance.Gw2State.TyrianTime;
-            var audio = AudioSource.Empty;
-            switch (state) {
-                case Gw2StateService.State.Mounted:
-
-                    if (!MusicMixer.Instance.Data.GetMountPlaylist(GameService.Gw2Mumble.PlayerCharacter.CurrentMount, out var context)) {
-                        return;
-                    }
-
-                    if (context.IsEmpty || !context.Enabled) {
-                        return;
-                    }
-
-                    audio = context.GetRandom(dayCycle);
-                    break;
-                case Gw2StateService.State.Defeated:
-                    if (!MusicMixer.Instance.Data.GetDefeatedPlaylist(out var context2)) {
-                        return;
-                    }
-
-                    if (context2.IsEmpty || !context2.Enabled) {
-                        return;
-                    }
-
-                    audio = context2.GetRandom(dayCycle);
-                    break;
-                default: break;
+            Playlist context = state switch {
+                Gw2StateService.State.Mounted  => MusicMixer.Instance.Data.GetMountPlaylist(GameService.Gw2Mumble.PlayerCharacter.CurrentMount),
+                Gw2StateService.State.Defeated => MusicMixer.Instance.Data.GetDefeatedPlaylist(),
+                _                              => null
+            };
+            if (context == null || context.IsEmpty || !context.Enabled) {
+                return;
             }
-
+            AudioSource audio = context.GetRandom((int)MusicMixer.Instance.Gw2State.TyrianTime);
             audio.State = state;
             await Play(audio);
         }
