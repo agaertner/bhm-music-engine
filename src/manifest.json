@@ -1,12 +1,12 @@
 {
   "name": "Mount Music",
-  "version": "1.7.5",
+  "version": "1.8.0",
   "namespace": "Nekres.Music_Mixer",
   "package": "Music Mixer.dll",
   "manifest_version": 1,
   "description": "Customize the soundtrack of the game. Create a responsive playlist for your mounts and other situations using YouTube and hundreds of other supported video hosters.",
   "dependencies": {
-    "bh.blishhud": ">=1.0.0"
+    "bh.blishhud": ">=1.2.0"
   },
   "url": "https://github.com/agaertner/bhm-music-engine",
   "directories": [

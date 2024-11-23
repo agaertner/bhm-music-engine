@@ -192,12 +192,10 @@ namespace Nekres.Music_Mixer {
 
             _defeatedIcon = ContentsManager.GetTexture("tabs/downed_enemy.png");
             var defeatedTab = new Tab(_defeatedIcon, () => {
-                if (!Data.GetDefeatedPlaylist(out var context)) {
-                    context = new Playlist {
-                        ExternalId = "Defeated",
-                        Tracks     = new List<AudioSource>()
-                    };
-                }
+                Playlist context = Data.GetDefeatedPlaylist() ?? new Playlist {
+                    ExternalId = "Defeated",
+                    Tracks     = new List<AudioSource>()
+                };
                 return new NpLibraryWrapperView(new BgmLibraryView(context, Resources.Defeated));
             }, Resources.Defeated);
             _moduleWindow.Tabs.Add(defeatedTab);

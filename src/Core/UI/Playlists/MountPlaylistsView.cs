@@ -66,14 +66,11 @@ namespace Nekres.Music_Mixer.Core.UI.Playlists {
 
                 mountItem.Click += (_, _) => {
 
-                    if (!MusicMixer.Instance.Data.GetMountPlaylist(mountType, out var context)) {
-                        context = new Playlist {
-                            ExternalId = mountType.ToString(),
-                            Enabled    = true,
-                            Tracks     = new List<AudioSource>()
-                        };
-                    }
-
+                    Playlist context = MusicMixer.Instance.Data.GetMountPlaylist(mountType) ?? new Playlist {
+                        ExternalId = mountType.ToString(),
+                        Enabled    = true,
+                        Tracks     = new List<AudioSource>()
+                    };
                     bgmLibraryContainer.Show(new BgmLibraryView(context, name));
                 };
             }

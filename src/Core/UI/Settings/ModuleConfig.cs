@@ -14,6 +14,17 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
             _defaultUpdates = true
         };
 
+        private bool _playToCompletion;
+        [JsonProperty("play_to_completion")]
+        public bool PlayToCompletion {
+            get => _playToCompletion;
+            set {
+                if (SetProperty(ref _playToCompletion, value)) {
+                    this.SaveConfig(MusicMixer.Instance.ModuleConfig);
+                }
+            }
+        }
+
         private bool _useCustomOutputDevice;
         [JsonProperty("use_output_device")]
         public bool UseCustomOutputDevice {

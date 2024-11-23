@@ -45,9 +45,18 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
                 Text    = Resources.Mute_when_GW2_is_in_the_background,
                 Checked = _config.MuteWhenInBackground
             };
-
             cbx.CheckedChanged += (_, e) => {
                 _config.MuteWhenInBackground = e.Checked;
+            };
+
+            cbx = new Checkbox {
+                Parent           = flowPanel,
+                Text             = "Play to completion",
+                BasicTooltipText = "Will keep playing the current song even if dismounted.",
+                Checked          = _config.PlayToCompletion
+            };
+            cbx.CheckedChanged += (_, e) => {
+                _config.PlayToCompletion = e.Checked;
             };
 
             var volumeContainer = new ViewContainer {
