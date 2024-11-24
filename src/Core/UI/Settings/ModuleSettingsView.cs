@@ -51,8 +51,8 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
 
             cbx = new Checkbox {
                 Parent           = flowPanel,
-                Text             = "Play to completion",
-                BasicTooltipText = "Will keep playing the current song even if dismounted.",
+                Text             = Resources.Play_to_completion,
+                BasicTooltipText = Resources.Will_finish_the_current_song_even_if_dismounted_,
                 Checked          = _config.PlayToCompletion
             };
             cbx.CheckedChanged += (_, e) => {

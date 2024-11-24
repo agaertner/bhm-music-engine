@@ -1,7 +1,6 @@
 ﻿using Blish_HUD;
 using Nekres.Music_Mixer.Core.Services.Data;
 using System;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -53,18 +52,17 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             this.Loading = false;
         }
 
-        private async Task<bool> TryPlay(AudioSource source) {
+        private async Task TryPlay(AudioSource source) {
+            MusicMixer.Logger.Info("Playing: \"" + source.Title + "\" | " + source.PageUrl + " | Vol: " + Math.Round(source.Volume, 3) + " | " + source.State);
             // Making sure WasApiOut is initialized in main synchronization context. Otherwise it will fail.
             // https://github.com/naudio/NAudio/issues/425
-            return await Task.Factory.StartNew(async () => {
-
+            await Task.Factory.StartNew(async () => {
                 var track = await AudioTrack.TryGetStream(source);
 
                 if (track.IsEmpty || MusicMixer.Instance == null 
                                   || MusicMixer.Instance.Gw2State == null 
                                   || source.State != MusicMixer.Instance.Gw2State.CurrentState) {
                     track.Dispose();
-                    return false;
                 }
 
                 if (!this.AudioTrack.IsEmpty) {
@@ -79,8 +77,6 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
                 MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
                 SetGameVolume(0.1f);
-
-                return true;
             }, CancellationToken.None, TaskCreationOptions.None, _scheduler).Unwrap();
         }
 
@@ -102,7 +98,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         private async void OnSoundtrackFinished(object o, EventArgs e) {
             _currentSource = AudioSource.Empty;
             MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(_currentSource));
-            await ChangeContext(MusicMixer.Instance.Gw2State.CurrentState);
+            await NextSong(MusicMixer.Instance.Gw2State.CurrentState);
         }
 
         public void Pause()
@@ -184,7 +180,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             // Don't change song if already playing one for mounted.
             if (MusicMixer.Instance.ModuleConfig.Value.PlayToCompletion 
              && e.NewValue == Gw2StateService.State.Mounted 
-             && this.AudioTrack is {IsEmpty: false}) {
+             && this.AudioTrack is {IsEmpty: false, IsBuffering: false} ) {
                 return;
             }
             // Change song.
@@ -192,7 +188,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 if (await PlayFromSave()) {
                     return;
                 }
-                await ChangeContext(e.NewValue);
+                await NextSong(e.NewValue);
                 return;
             }
             // Stop song if appropriate.
@@ -203,7 +199,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             Stop(); // Stop song when in standby or other states.
         }
 
-        private async Task ChangeContext(Gw2StateService.State state) {
+        public async Task NextSong(Gw2StateService.State state) {
             Playlist context = state switch {
                 Gw2StateService.State.Mounted  => MusicMixer.Instance.Data.GetMountPlaylist(GameService.Gw2Mumble.PlayerCharacter.CurrentMount),
                 Gw2StateService.State.Defeated => MusicMixer.Instance.Data.GetDefeatedPlaylist(),

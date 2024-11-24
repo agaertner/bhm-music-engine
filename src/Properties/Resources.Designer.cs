@@ -232,6 +232,15 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Next.
+        /// </summary>
+        internal static string Next {
+            get {
+                return ResourceManager.GetString("Next", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Night.
         /// </summary>
         internal static string Night {
@@ -286,6 +295,15 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Play to completion.
+        /// </summary>
+        internal static string Play_to_completion {
+            get {
+                return ResourceManager.GetString("Play to completion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Playlists.
         /// </summary>
         internal static string Playlists {
@@ -300,6 +318,15 @@ namespace Nekres.Music_Mixer.Properties {
         internal static string Please_wait_ {
             get {
                 return ResourceManager.GetString("Please wait.", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Previous.
+        /// </summary>
+        internal static string Previous {
+            get {
+                return ResourceManager.GetString("Previous", resourceCulture);
             }
         }
         
@@ -462,6 +489,15 @@ namespace Nekres.Music_Mixer.Properties {
         internal static string Warclaw {
             get {
                 return ResourceManager.GetString("Warclaw", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Will finish the current song even if dismounted..
+        /// </summary>
+        internal static string Will_finish_the_current_song_even_if_dismounted_ {
+            get {
+                return ResourceManager.GetString("Will finish the current song even if dismounted.", resourceCulture);
             }
         }
         
