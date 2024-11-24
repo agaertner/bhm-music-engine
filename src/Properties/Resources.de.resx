@@ -238,7 +238,7 @@
     <value>Pausieren</value>
   </data>
   <data name="Continue" xml:space="preserve">
-    <value>Weiter</value>
+    <value>Fortsetzen</value>
   </data>
   <data name="New music available!" xml:space="preserve">
     <value>Neue Musik verfügbar!</value>
@@ -254,5 +254,17 @@
   </data>
   <data name="{0} is ready." xml:space="preserve">
     <value>{0} ist bereit.</value>
+  </data>
+  <data name="Play to completion" xml:space="preserve">
+    <value>Vollständig abspielen</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Weiter</value>
+  </data>
+  <data name="Previous" xml:space="preserve">
+    <value>Zurück</value>
+  </data>
+  <data name="Will finish the current song even if dismounted." xml:space="preserve">
+    <value>Spielt den aktuellen Song zuende, auch wenn Ihr absattelt.</value>
   </data>
 </root>

@@ -256,4 +256,16 @@
   <data name="{0} is ready." xml:space="preserve">
     <value>{0} est prêt.</value>
   </data>
+  <data name="Play to completion" xml:space="preserve">
+    <value>Jouer jusqu&apos;au bout</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Suivant</value>
+  </data>
+  <data name="Previous" xml:space="preserve">
+    <value>Précédent</value>
+  </data>
+  <data name="Will finish the current song even if dismounted." xml:space="preserve">
+    <value>Termine la chanson en cours même s&apos;il est démonté.</value>
+  </data>
 </root>

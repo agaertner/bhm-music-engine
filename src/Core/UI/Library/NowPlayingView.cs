@@ -20,6 +20,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
         private Texture2D _playTex;
         private Texture2D _pauseTex;
         private Texture2D _stopTex;
+        private Texture2D _nextTex;
 
         // Track info
         private AudioSource    _source;
@@ -41,6 +42,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
             _playTex  = MusicMixer.Instance.ContentsManager.GetTexture("play.png");
             _pauseTex = MusicMixer.Instance.ContentsManager.GetTexture("pause.png");
             _stopTex  = MusicMixer.Instance.ContentsManager.GetTexture("stop.png");
+            _nextTex = MusicMixer.Instance.ContentsManager.GetTexture("next.png");
         }
 
         private void OnMusicChanged(object sender, ValueEventArgs<AudioSource> e) {
@@ -94,24 +96,44 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
             };
 
             playBttn.Click += (_, _) => {
+                GameService.Content.PlaySoundEffectByName("button-click");
                 var config = MusicMixer.Instance.ModuleConfig.Value;
                 config.Paused = !config.Paused;
-
                 if (config.Paused) {
-                    playBttn.Texture          = _playTex;
-                    playBttn.BasicTooltipText = Resources.Continue;
-                } else {
-                    playBttn.Texture          = _pauseTex;
-                    playBttn.BasicTooltipText = Resources.Pause;
-                }
-                
-                if (config.Paused) {
+                    playBttn.Texture = _playTex;
+                    playBttn.BasicTooltipText = Resources.Resume;
                     MusicMixer.Instance.Audio.Pause();
                 } else {
+                    playBttn.Texture = _pauseTex;
+                    playBttn.BasicTooltipText = Resources.Pause;
                     MusicMixer.Instance.Audio.Resume();
                 }
             };
 
+            var nextBttn = new Image {
+                Texture          = _nextTex,
+                Parent           = buildPanel,
+                Width            = 20,
+                Height           = 20,
+                Left             = playBttn.Right + 28,
+                Top              = playBttn.Top   + 4,
+                BasicTooltipText = Resources.Next
+            };
+            nextBttn.MouseEntered += (_, _) => {
+                nextBttn.Tint = Color.White * 0.8f;
+            };
+
+            nextBttn.MouseLeft += (_, _) => {
+                nextBttn.Tint = Color.White;
+            };
+            nextBttn.Click += async (_, _) => {
+                GameService.Content.PlaySoundEffectByName("button-click");
+                var config = MusicMixer.Instance.ModuleConfig.Value;
+                if (!config.Paused) {
+                    MusicMixer.Instance.Audio.Stop();
+                    await MusicMixer.Instance.Audio.NextSong(MusicMixer.Instance.Gw2State.CurrentState);
+                }
+            };
             _thumbnail = new RoundedImage {
                 Parent = _buildPanel,
                 Width = 192, // 16:9

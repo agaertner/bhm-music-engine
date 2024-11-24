@@ -84,7 +84,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 return AudioTrack.Empty;
             }
 
-            logger ??= Logger.GetLogger(typeof(AudioTrack));
+            logger ??= MusicMixer.Logger;
             try {
                 return new AudioTrack(source);
             } catch (Exception e) {
