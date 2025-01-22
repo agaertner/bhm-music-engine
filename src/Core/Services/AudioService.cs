@@ -24,12 +24,10 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
             _scheduler = TaskScheduler.FromCurrentSynchronizationContext();
 
-            MusicMixer.Instance.Gw2State.IsSubmergedChanged += OnIsSubmergedChanged;
-            MusicMixer.Instance.Gw2State.StateChanged       += OnStateChanged;
-
+            MusicMixer.Instance.Gw2State.IsSubmergedChanged          += OnIsSubmergedChanged;
+            MusicMixer.Instance.Gw2State.StateChanged                += OnStateChanged;
             GameService.GameIntegration.Gw2Instance.Gw2LostFocus     += OnGw2LostFocus;
             GameService.GameIntegration.Gw2Instance.Gw2AcquiredFocus += OnGw2AcquiredFocus;
-            GameService.GameIntegration.Gw2Instance.Gw2Closed        += OnGw2Closed;
         }
 
         public async Task Play(AudioSource source) {
@@ -104,7 +102,6 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             var track = this.AudioTrack;
             if (track != null) {
                 track.Finished -= OnSoundtrackFinished;
-                track.Dispose();
             }
             this.AudioTrack = AudioTrack.Empty;
             MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(AudioSource.Empty));
@@ -121,36 +118,28 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             await NextSong(MusicMixer.Instance.Gw2State.CurrentState);
         }
 
-        public void Pause()
-        {
-            if (this.AudioTrack.IsEmpty) {
-                return;
+        public void Pause() {
+            if (!this.AudioTrack.IsEmpty) {
+                this.AudioTrack.Pause();
+                SetGameVolume(1);
             }
-            this.AudioTrack.Pause();
-            SetGameVolume(1);
         }
 
-        public void Resume()
-        {
-            if (this.AudioTrack.IsEmpty) {
-                return;
+        public void Resume() {
+            if (!this.AudioTrack.IsEmpty) {
+                this.AudioTrack.Resume();
+                SetGameVolume(0.1f);
             }
-            this.AudioTrack.Resume();
-            SetGameVolume(0.1f);
         }
 
-        public void SaveContext()
-        {
-            if (this.AudioTrack.IsEmpty) {
-                return;
+        public void SaveContext() {
+            if (!this.AudioTrack.IsEmpty) {
+                _interuptedAt   = this.AudioTrack.CurrentTime;
+                _previousSource = this.AudioTrack.Source;
             }
-
-            _interuptedAt = this.AudioTrack.CurrentTime;
-            _previousSource = this.AudioTrack.Source;
         }
 
-        public async Task<bool> PlayFromSave()
-        {
+        public async Task<bool> PlayFromSave() {
             // No save or saved time is out of duration bounds
             if (_previousSource == null || _interuptedAt > _previousSource.Duration) {
                 return false;
@@ -170,14 +159,8 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             MusicMixer.Instance.Gw2State.StateChanged                -= OnStateChanged;
             GameService.GameIntegration.Gw2Instance.Gw2LostFocus     -= OnGw2LostFocus;
             GameService.GameIntegration.Gw2Instance.Gw2AcquiredFocus -= OnGw2AcquiredFocus;
-            GameService.GameIntegration.Gw2Instance.Gw2Closed        -= OnGw2Closed;
-
             this.AudioTrack?.Dispose();
-
-            // Reset GW2 volume
-            if (GameService.GameIntegration.Gw2Instance.Gw2IsRunning) {
-                AudioUtil.SetVolume(GameService.GameIntegration.Gw2Instance.Gw2Process.Id, 1);
-            }
+            SetGameVolume(1);
         }
 
         private void OnGw2LostFocus(object o, EventArgs e) {
@@ -191,11 +174,12 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             Resume();
         }
 
-        private void OnGw2Closed(object o, EventArgs e) {
-            Reset();
-        }
-
         private async void OnStateChanged(object o, ValueChangedEventArgs<Gw2StateService.State> e) {
+            if (e.NewValue == Gw2StateService.State.None) {
+                Reset();
+                return;
+            }
+
             if (MusicMixer.Instance.ModuleConfig.Value.PlayToCompletion && !this.AudioTrack.IsEmpty) {
                 if (e.NewValue != Gw2StateService.State.Defeated) {
                     return; // Continue playing when changing states (except when defeated).

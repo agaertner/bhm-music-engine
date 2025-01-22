@@ -1,4 +1,4 @@
-﻿using Blish_HUD;
+using Blish_HUD;
 using Blish_HUD.Controls;
 using Blish_HUD.Extended;
 using Gw2Sharp.Models;
@@ -17,7 +17,9 @@ namespace Nekres.Music_Mixer.Core.Services {
 
         public enum State
         {
-            StandBy, // silence
+            None, // silence (no mumble activity ie.loading screen, cinematic, character select)
+            StandBy, // transition state between states.
+            Ambient, // default when no other criteria are met.
             Mounted,
             Battle,
             Competitive,
@@ -193,11 +195,14 @@ namespace Nekres.Music_Mixer.Core.Services {
                 _lastLockFileCheck = DateTime.UtcNow;
                 CheckLockFile(State.Defeated);
 
-                if (GameService.Gw2Mumble.IsAvailable) {
+                if (GameService.GameIntegration.Gw2Instance.IsInGame) {
                     CheckTyrianTime();
                     CheckWaterLevel();
-                    CheckMountChanged();
                     CheckIsInCombatChanged();
+                    CheckMountChanged();
+                    if (CurrentState == State.StandBy) {
+                        ChangeState(State.Ambient); // In-Game but no other state has its criteria met.
+                    }
                 }
             }
         }
@@ -219,7 +224,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                     ChangeState(State.Mounted);
                 }
             } else if (this.CurrentState == State.Mounted) {
-                this.CurrentState = State.StandBy;
+                ChangeState(State.StandBy);
             }
         }
 
@@ -265,7 +270,7 @@ namespace Nekres.Music_Mixer.Core.Services {
             _outOfCombatTimer.Stop();
             _outOfCombatTimerLong.Stop();
             _inCombatTimer.Stop();
-            this.CurrentState = State.StandBy;
+            ChangeState(State.None);
         }
     }
 }
