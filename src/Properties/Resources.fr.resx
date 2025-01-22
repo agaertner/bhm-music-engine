@@ -256,8 +256,8 @@
   <data name="{0} is ready." xml:space="preserve">
     <value>{0} est prêt.</value>
   </data>
-  <data name="Play to completion" xml:space="preserve">
-    <value>Jouer jusqu&apos;au bout</value>
+  <data name="Play to completion." xml:space="preserve">
+    <value>Jouer jusqu&apos;au bout.</value>
   </data>
   <data name="Next" xml:space="preserve">
     <value>Suivant</value>
@@ -286,5 +286,15 @@ n&apos;est pas disponible (Raison : {1})</value>
   </data>
   <data name="Would you like to remove this track from all playlists?" xml:space="preserve">
     <value>Souhaitez-vous supprimer ce titre de toutes les listes de lecture?</value>
+  </data>
+  <data name="Enable crossfade track transition." xml:space="preserve">
+    <value>Activer la transition de la piste en fondu enchaîné.</value>
+  </data>
+  <data name="Crossfade Duration" xml:space="preserve">
+    <value>Durée du fondu enchaîné</value>
+  </data>
+  <data name="Copy Playlists" xml:space="preserve">
+    <value>Wiedergabelisten kopieren</value>
+    <comment>Fuzzy</comment>
   </data>
 </root>

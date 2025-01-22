@@ -12,17 +12,21 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         public event EventHandler<ValueEventArgs<AudioSource>> MusicChanged;
 
         public AudioTrack AudioTrack { get; private set; }
-        public bool       Loading    { get; private set; }
+
+        private int _processing;
+        public bool Loading => 0 == Interlocked.Exchange(ref _processing, 1);
 
         private AudioSource _previousSource;
         private TimeSpan    _interuptedAt;
 
         private readonly TaskScheduler _scheduler;
+        private          Task          _trackLoader;
 
         public AudioService() {
             AudioTrack = AudioTrack.Empty;
 
-            _scheduler = TaskScheduler.FromCurrentSynchronizationContext();
+            _scheduler   = TaskScheduler.FromCurrentSynchronizationContext();
+            _trackLoader = Task.CompletedTask;
 
             MusicMixer.Instance.Gw2State.IsSubmergedChanged          += OnIsSubmergedChanged;
             MusicMixer.Instance.Gw2State.StateChanged                += OnStateChanged;
@@ -30,14 +34,24 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             GameService.GameIntegration.Gw2Instance.Gw2AcquiredFocus += OnGw2AcquiredFocus;
         }
 
+        public void Update() {
+            this.AudioTrack.Invalidate();
+            if (MusicMixer.Instance.ModuleConfig.Value.Paused) {
+                this.Pause();
+            } else if (AudioTrack.IsEmpty && _trackLoader.IsCompleted) {
+                _trackLoader = Task.Run(async () => {
+                    await this.NextSong(MusicMixer.Instance.Gw2State.CurrentState);
+                });
+            }
+        }
+
         public async Task Play(AudioSource source) {
             if (this.Loading || source == null || source.IsEmpty || MusicMixer.Instance == null) {
                 return;
             }
-            this.Loading = true;
 
             if (string.IsNullOrEmpty(source.PageUrl)) {
-                this.Loading = false;
+                Interlocked.Exchange(ref _processing, 0);
                 return;
             }
 
@@ -52,8 +66,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
             if (error > 0) {
                 if (error == YtDlpService.ErrorCode.Unknown) {
-                    this.Loading = false;
-                    await NextSong(source.State);
+                    Interlocked.Exchange(ref _processing, 0);
                     return;
                 }
                 ErrorPrompt.Show(source.GetErrorMessage() + "\n\n" + Resources.Would_you_like_to_remove_this_track_from_all_playlists_, ErrorPrompt.DialogIcon.Exclamation, ErrorPrompt.DialogButtons.Yes | ErrorPrompt.DialogButtons.No,
@@ -63,16 +76,13 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                                      } else {
                                          MusicMixer.Instance.Data.AddSourceToSkips(source.ExternalId); // Skip this session.
                                      }
-                                     this.Loading = false;
-                                     if (this.AudioTrack.IsEmpty) { // If this was a preview attempt there might be a track already playing. TODO: Separate load process for previews without state check.
-                                         await NextSong(source.State);
-                                     }
+                                     Interlocked.Exchange(ref _processing, 0);
                                  });
                 return;
             }
 
             await TryPlay(source);
-            this.Loading = false;
+            Interlocked.Exchange(ref _processing, 0);
         }
 
         private async Task TryPlay(AudioSource source) {
@@ -85,10 +95,11 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             await Task.Factory.StartNew(async () => {
                 var track = await AudioTrack.TryGetStream(source);
                 if (track.IsEmpty) {
-                    track.Dispose();
+                    return;
                 }
                 bool isPlaying = await track.Play();
                 if (isPlaying) {
+                    this.Reset();
                     SetGameVolume(0.1f);
                     track.Finished  += OnSoundtrackFinished;
                     this.AudioTrack = track;
@@ -100,10 +111,9 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         public void Reset() {
             SetGameVolume(1);
             var track = this.AudioTrack;
-            if (track != null) {
-                track.Finished -= OnSoundtrackFinished;
-            }
-            this.AudioTrack = AudioTrack.Empty;
+            track.Finished -= OnSoundtrackFinished;
+            track.Dispose();
+            this.AudioTrack = AudioTrack.Empty; 
             MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(AudioSource.Empty));
         }
 
@@ -113,9 +123,8 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             }
         }
 
-        private async void OnSoundtrackFinished(object o, EventArgs e) {
+        private void OnSoundtrackFinished(object o, EventArgs e) {
             Reset();
-            await NextSong(MusicMixer.Instance.Gw2State.CurrentState);
         }
 
         public void Pause() {
@@ -160,6 +169,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             GameService.GameIntegration.Gw2Instance.Gw2LostFocus     -= OnGw2LostFocus;
             GameService.GameIntegration.Gw2Instance.Gw2AcquiredFocus -= OnGw2AcquiredFocus;
             this.AudioTrack?.Dispose();
+            _trackLoader?.Dispose();
             SetGameVolume(1);
         }
 
@@ -174,12 +184,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             Resume();
         }
 
-        private async void OnStateChanged(object o, ValueChangedEventArgs<Gw2StateService.State> e) {
-            if (e.NewValue == Gw2StateService.State.None) {
-                Reset();
-                return;
-            }
-
+        private void OnStateChanged(object o, ValueChangedEventArgs<Gw2StateService.State> e) {
             if (MusicMixer.Instance.ModuleConfig.Value.PlayToCompletion && !this.AudioTrack.IsEmpty) {
                 if (e.NewValue != Gw2StateService.State.Defeated) {
                     return; // Continue playing when changing states (except when defeated).
@@ -188,14 +193,13 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                     return; // Continue playing when states match and play to completion is set.
                 }
             }
-            if (await PlayFromSave()) {
-                return;
-            }
-            await NextSong(e.NewValue);
+            Reset();
         }
 
         public async Task NextSong(Gw2StateService.State state) {
-            this.Reset();
+            if (this.Loading) {
+                return;
+            }
             Playlist context = state switch {
                 Gw2StateService.State.Mounted  => MusicMixer.Instance.Data.GetMountPlaylist(GameService.Gw2Mumble.PlayerCharacter.CurrentMount),
                 Gw2StateService.State.Defeated => MusicMixer.Instance.Data.GetDefeatedPlaylist(),

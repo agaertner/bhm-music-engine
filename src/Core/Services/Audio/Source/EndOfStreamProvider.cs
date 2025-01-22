@@ -1,40 +1,44 @@
-﻿ using NAudio.Wave;
+﻿using NAudio.Wave;
 using System;
 
-namespace Nekres.Music_Mixer.Core.Services.Audio.Source
-{
+namespace Nekres.Music_Mixer.Core.Services.Audio.Source {
     internal class EndOfStreamProvider : ISampleProvider
     {
-        public event EventHandler<EventArgs> Ended;
+        public event EventHandler<EventArgs> EndReached;
         
         public WaveFormat WaveFormat => _sourceProvider.WaveFormat;
 
         public bool IsBuffering { get; private set; }
 
+        public bool Ended { get; private set; }
+
         private MediaFoundationReader _mediaProvider;
 
         private ISampleProvider _sourceProvider;
 
-        private bool _ended;
+        private double _endTimeOffsetMs;
 
-        public EndOfStreamProvider(MediaFoundationReader mediaProvider)
+        /// <summary>
+        /// Provides an event that fires when the stream reaches its end.
+        /// </summary>
+        /// <param name="mediaProvider">Media that provides the stream.</param>
+        /// <param name="endTimeOffsetMs">Offset in milliseconds to signal the end prematurely.</param>
+        public EndOfStreamProvider(MediaFoundationReader mediaProvider, int endTimeOffsetMs = 0)
         {
             _mediaProvider = mediaProvider;
             _sourceProvider = mediaProvider.ToSampleProvider();
+            _endTimeOffsetMs = Math.Abs(endTimeOffsetMs);
         }
 
         public int Read(float[] buffer, int offset, int count)
         {
             int read = _sourceProvider.Read(buffer, offset, count);
-
             this.IsBuffering = read <= 0;
-
-            if (_mediaProvider.CurrentTime < _mediaProvider.TotalTime || _ended) {
+            if (Ended || _mediaProvider.CurrentTime.TotalMilliseconds < _mediaProvider.TotalTime.TotalMilliseconds - _endTimeOffsetMs) {
                 return read;
             }
-
-            _ended = true;
-            this.Ended?.Invoke(this, EventArgs.Empty);
+            Ended = true;
+            this.EndReached?.Invoke(this, EventArgs.Empty);
             return read;
         }
     }

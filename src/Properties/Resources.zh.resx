@@ -255,8 +255,8 @@
   <data name="{0} is ready." xml:space="preserve">
     <value>{0} is ready.</value>
   </data>
-  <data name="Play to completion" xml:space="preserve">
-    <value>Play to completion</value>
+  <data name="Play to completion." xml:space="preserve">
+    <value>Play to completion.</value>
   </data>
   <data name="Next" xml:space="preserve">
     <value>Next</value>
@@ -285,5 +285,14 @@ is not available (Reason: {1})</value>
   </data>
   <data name="Would you like to remove this track from all playlists?" xml:space="preserve">
     <value>Would you like to remove this track from all playlists?</value>
+  </data>
+  <data name="Enable crossfade track transition." xml:space="preserve">
+    <value>Enable crossfade track transition.</value>
+  </data>
+  <data name="Crossfade Duration" xml:space="preserve">
+    <value>Crossfade Duration</value>
+  </data>
+  <data name="Copy Playlists" xml:space="preserve">
+    <value>Copy Playlists</value>
   </data>
 </root>

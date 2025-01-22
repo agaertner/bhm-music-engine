@@ -7,6 +7,7 @@ using Nekres.Music_Mixer.Properties;
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using Color = Microsoft.Xna.Framework.Color;
 using Container = Blish_HUD.Controls.Container;
 
@@ -126,12 +127,13 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
             nextBttn.MouseLeft += (_, _) => {
                 nextBttn.Tint = Color.White;
             };
-            nextBttn.Click += async (_, _) => {
+            nextBttn.Click += (_, _) => {
                 GameService.Content.PlaySoundEffectByName("button-click");
-                var config = MusicMixer.Instance.ModuleConfig.Value;
-                if (!config.Paused) {
+                if (!MusicMixer.Instance.Audio.Loading) {
                     MusicMixer.Instance.Audio.Reset();
-                    await MusicMixer.Instance.Audio.NextSong(MusicMixer.Instance.Gw2State.CurrentState);
+                    MusicMixer.Instance.ModuleConfig.Value.Paused = false;
+                    playBttn.Texture = _pauseTex;
+                    playBttn.BasicTooltipText = Resources.Pause;
                 }
             };
             _thumbnail = new RoundedImage {

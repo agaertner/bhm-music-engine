@@ -6,12 +6,15 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
     internal class ModuleConfig : ConfigBase {
 
         public static ModuleConfig Default = new() {
-            _outputDevice = string.Empty,
+            _outputDevice          = string.Empty,
             _useCustomOutputDevice = false,
-            _masterVolume = 0.5f,
-            _averageBitrate = YtDlpService.AudioBitrate.B320,
-            _muteWhenInBackground = true,
-            _defaultUpdates = true
+            _masterVolume          = 0.5f,
+            _averageBitrate        = YtDlpService.AudioBitrate.B320,
+            _muteWhenInBackground  = true,
+            _defaultUpdates        = true,
+            _playToCompletion      = false,
+            _crossFade             = true,
+            _crossFadeMs           = 5000,
         };
 
         private bool _playToCompletion;
@@ -20,6 +23,28 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
             get => _playToCompletion;
             set {
                 if (SetProperty(ref _playToCompletion, value)) {
+                    this.SaveConfig(MusicMixer.Instance.ModuleConfig);
+                }
+            }
+        }
+
+        private bool _crossFade;
+        [JsonProperty("crossfade")]
+        public bool CrossFade {
+            get => _crossFade;
+            set {
+                if (SetProperty(ref _crossFade, value)) {
+                    this.SaveConfig(MusicMixer.Instance.ModuleConfig);
+                }
+            }
+        }
+
+        private int _crossFadeMs = 5000;
+        [JsonProperty("crossfade_ms")]
+        public int CrossFadeMs {
+            get => _crossFadeMs;
+            set {
+                if (SetProperty(ref _crossFadeMs, value)) {
                     this.SaveConfig(MusicMixer.Instance.ModuleConfig);
                 }
             }

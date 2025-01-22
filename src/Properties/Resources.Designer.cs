@@ -116,6 +116,24 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Copy Playlists.
+        /// </summary>
+        internal static string Copy_Playlists {
+            get {
+                return ResourceManager.GetString("Copy Playlists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Crossfade Duration.
+        /// </summary>
+        internal static string Crossfade_Duration {
+            get {
+                return ResourceManager.GetString("Crossfade Duration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Day.
         /// </summary>
         internal static string Day {
@@ -157,6 +175,15 @@ namespace Nekres.Music_Mixer.Properties {
         internal static string Done_ {
             get {
                 return ResourceManager.GetString("Done.", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enable crossfade track transition..
+        /// </summary>
+        internal static string Enable_crossfade_track_transition_ {
+            get {
+                return ResourceManager.GetString("Enable crossfade track transition.", resourceCulture);
             }
         }
         
@@ -332,11 +359,11 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Play to completion.
+        ///   Looks up a localized string similar to Play to completion..
         /// </summary>
-        internal static string Play_to_completion {
+        internal static string Play_to_completion_ {
             get {
-                return ResourceManager.GetString("Play to completion", resourceCulture);
+                return ResourceManager.GetString("Play to completion.", resourceCulture);
             }
         }
         
