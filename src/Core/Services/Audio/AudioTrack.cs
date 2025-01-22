@@ -36,6 +36,10 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         private bool     _customDevice;
         private MMDevice _device;
 
+        private bool _crossFade;
+        private int  _crossFadeMs;
+        private int  _fadeOutMs = 2000;
+
         private AudioTrack() {
             IsEmpty = true;
         }
@@ -46,9 +50,10 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
             _device = GameService.GameIntegration.Audio.AudioDevice;
 
-            if (MusicMixer.Instance.ModuleConfig.Value.UseCustomOutputDevice) {
-                if (!string.IsNullOrWhiteSpace(MusicMixer.Instance.ModuleConfig.Value.OutputDevice)) {
-                    var customDevice = AudioUtil.GetWasApiOutputDeviceById(MusicMixer.Instance.ModuleConfig.Value.OutputDevice);
+            var config = MusicMixer.Instance.ModuleConfig.Value;
+            if (config.UseCustomOutputDevice) {
+                if (!string.IsNullOrWhiteSpace(config.OutputDevice)) {
+                    var customDevice = AudioUtil.GetWasApiOutputDeviceById(config.OutputDevice);
                     if (customDevice != null) {
                         _device       = customDevice;
                         _customDevice = true;
@@ -60,9 +65,11 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             _outputDevice.PlaybackStopped += OnPlaybackStopped;
 
             _mediaProvider = new MediaFoundationReader(Source.AudioUrl);
-            
-            _endOfStream = new EndOfStreamProvider(_mediaProvider);
-            _endOfStream.Ended += OnEndOfStreamReached;
+
+            _crossFade         =  config.CrossFade;
+            _crossFadeMs       =  config.CrossFadeMs;
+            _endOfStream       =  new EndOfStreamProvider(_mediaProvider, _crossFadeMs);
+            _endOfStream.EndReached += OnEndOfStreamReached;
 
             _volumeProvider      =  new SubmergedVolumeProvider(_endOfStream);
             Source.VolumeChanged += OnVolumeChanged;
@@ -134,7 +141,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             return AudioTrack.Empty;
         }
 
-        public async Task<bool> Play(int fadeInDuration = 500, int retries = 3, int delayMs = 500, Logger logger = null)
+        public async Task<bool> Play(int retries = 3, int delayMs = 500, Logger logger = null)
         {
             if (IsEmpty
              || _disposing
@@ -148,14 +155,14 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                     _outputDevice.Init(_equalizer);
                 }
                 _outputDevice.Play();
-                _fadeInOut.BeginFadeIn(fadeInDuration);
+                _fadeInOut.BeginFadeIn(_crossFade ? 2000 : 500);
                 this.ToggleSubmergedFx(MusicMixer.Instance.Gw2State.IsSubmerged);
                 return true;
             } catch (Exception e) {
 
                 if (retries > 0) {
                     await Task.Delay(delayMs);
-                    return await Play(fadeInDuration, retries - 1, delayMs,logger);
+                    return await Play(retries - 1, delayMs, logger);
                 }
 
                 switch (e) {
@@ -196,8 +203,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             }
         }
 
-        public void Seek(float seconds)
-        {
+        public void Seek(float seconds) {
             if (IsEmpty || _disposing) {
                 return;
             }
@@ -205,8 +211,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             _mediaProvider?.SetPosition(seconds);
         }
 
-        public void Seek(TimeSpan timespan)
-        {
+        public void Seek(TimeSpan timespan) {
             if (IsEmpty || _disposing) {
                 return;
             }
@@ -255,9 +260,10 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 return;
             }
             _outputDevice.PlaybackStopped -= OnPlaybackStopped;
-            _endOfStream.Ended            -= OnEndOfStreamReached;
-            _fadeInOut.BeginFadeOut(2000);
-            Task.Delay(2005).ContinueWith(_ => {
+            _endOfStream.EndReached -= OnEndOfStreamReached;
+            var fadeOutMs = _crossFade && _endOfStream.Ended ? _crossFadeMs : _fadeOutMs;
+            _fadeInOut.BeginFadeOut(fadeOutMs);
+            Task.Delay(fadeOutMs + 5).ContinueWith(_ => {
                 _outputDevice.Stop();
                 DisposeMediaInterfaces();
             });
@@ -281,7 +287,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         private void OnEndOfStreamReached(object o, EventArgs e) {
-            _endOfStream.Ended -= OnEndOfStreamReached;
+            _endOfStream.EndReached -= OnEndOfStreamReached;
             this.Finished?.Invoke(this, EventArgs.Empty);
         }
     }

@@ -51,7 +51,7 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
 
             cbx = new Checkbox {
                 Parent           = flowPanel,
-                Text             = Resources.Play_to_completion,
+                Text             = Resources.Play_to_completion_,
                 BasicTooltipText = Resources.Will_finish_the_current_song_even_if_dismounted_,
                 Checked          = _config.PlayToCompletion
             };
@@ -66,9 +66,31 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
             };
             var volumeSetting = new NumericConfigView(_config.MasterVolume * 100, Resources.Master_Volume);
             volumeSetting.ValueChanged += (_, e) => {
-                _config.MasterVolume = e.Value / 100;
+                _config.MasterVolume             = e.Value / 100;
+                volumeContainer.BasicTooltipText = $"{_config.MasterVolume}";
             };
             volumeContainer.Show(volumeSetting);
+
+            cbx = new Checkbox {
+                Parent  = flowPanel,
+                Text    = Resources.Enable_crossfade_track_transition_,
+                Checked = _config.CrossFade
+            };
+            cbx.CheckedChanged += (_, e) => {
+                _config.CrossFade = e.Checked;
+            };
+
+            var crossfadeDurationContainer = new ViewContainer {
+                Parent = flowPanel,
+                Width  = flowPanel.ContentRegion.Width,
+                Height = 30,
+            };
+            var crossfadeDurationSetting = new NumericConfigView(_config.CrossFadeMs, Resources.Crossfade_Duration, 2000, 8000);
+            crossfadeDurationSetting.ValueChanged += (_, e) => {
+                _config.CrossFadeMs = (int)e.Value;
+                crossfadeDurationContainer.BasicTooltipText = $"{_config.CrossFadeMs / 1000}s";
+            };
+            crossfadeDurationContainer.Show(crossfadeDurationSetting);
 
             var avgBitrateSettingContainer = new ViewContainer {
                 Parent = flowPanel,
@@ -110,9 +132,9 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
 
             var defaultBttn = new StandardButton {
                 Parent = flowPanel,
-                Width  = 200,
-                Height = 23,
-                Text   = "Copy Playlists to Clipboard"
+                Width  = 180,
+                Height = 26,
+                Text   = Resources.Copy_Playlists
             };
 
             defaultBttn.Click += async (_,_) => {
@@ -131,10 +153,13 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
 
             private float  _value;
             private string _displayText;
-
-            public NumericConfigView(float value, string displayText) {
+            private float  _minValue;
+            private float  _maxValue;
+            public NumericConfigView(float value, string displayText, float minValue = 0, float maxValue = 200) {
                 _value = value;
                 _displayText = displayText;
+                _minValue = minValue;
+                _maxValue = maxValue;
             }
 
             protected override void Build(Container buildPanel) {
@@ -145,11 +170,12 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
                 label.Text          = _displayText;
 
                 var trackBar = new TrackBar();
-                trackBar.Size     = new Point(277, 16);
-                trackBar.Left     = label.Right + Panel.LEFT_PADDING;
-                trackBar.Parent   = buildPanel;
-                trackBar.MaxValue = 200;
-                trackBar.Value    = _value;
+                trackBar.Size             = new Point(277, 16);
+                trackBar.Left             = label.Right + Panel.LEFT_PADDING;
+                trackBar.Parent           = buildPanel;
+                trackBar.MinValue         = _minValue;
+                trackBar.MaxValue         = _maxValue;
+                trackBar.Value            = _value;
 
                 trackBar.IsDraggingChanged += (_, e) => {
                     if (!e.Value) {
