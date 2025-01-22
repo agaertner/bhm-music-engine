@@ -54,7 +54,7 @@ namespace Nekres.Music_Mixer.Core.Services {
             }
         }
 
-        private State _currentState = State.StandBy;
+        private State _currentState = State.None;
         public State CurrentState {
             get => _currentState;
             set {
@@ -102,7 +102,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                     CurrentState = newState;
                     break;
                 case State.Mounted:
-                    if (GameService.Gw2Mumble.CurrentMap.Type == MapType.Public ||
+                    if (GameService.Gw2Mumble.CurrentMap.Type.IsPublic() ||
                         _guildHallIds.Contains(GameService.Gw2Mumble.CurrentMap.Id)) 
                     {
                         CurrentState = newState;

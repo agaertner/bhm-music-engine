@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Nekres.Music_Mixer {
     public static class AudioUtil {
@@ -29,40 +30,47 @@ namespace Nekres.Music_Mixer {
         /// <param name="targetVolume">The target volume between 0 and 1.</param>
         /// <param name="duration">Ease duration in seconds.</param>
         public static void SetVolume(int processId, float targetVolume, float duration = 2) {
-            if (Math.Abs(targetVolume - _lastTargetVolume) < 0.05f) {
-                return;
-            }
-            _lastTargetVolume = targetVolume;
-
-            _animEase?.Cancel(); // Cancel previous ease.
-            // (Do NOT use .CancelAndComplete()! A sudden volume spike can damage hearing!)
-
-            // Ensure disposal of old volumes as we cancel and skip completion functions.
-            Dispose(_volumes); 
-
-            // Retrieve new volumes in case new devices were plugged or process output has changed.
-            var volumes = GetVolumes(processId);
-
-            if (!volumes.Any()) {
-                return;
-            }
-
-            var currentVolume = volumes.Average(v => v.Volume);
-
-            _animEase = GameService.Animation.Tweener.Timer(duration).Ease(t => {
-                var delta     = (targetVolume - currentVolume) * t;
-                var newVolume = currentVolume + delta;
-
-                foreach (var v in volumes) {
-                    v.Volume = newVolume > 1 ? 1 : newVolume < 0 ? 0 : newVolume;
+            Task.Run(() => {
+                if (Math.Abs(targetVolume - _lastTargetVolume) < 0.05f) {
+                    return;
                 }
 
-                return newVolume;
-            }).OnComplete(() => {
-                Dispose(volumes);
-            });
+                _lastTargetVolume = targetVolume;
 
-            _volumes = volumes.ToList();
+                _animEase?.Cancel(); // Cancel previous ease.
+
+                // (Do NOT use .CancelAndComplete()! A sudden volume spike can damage hearing!)
+
+                // Ensure disposal of old volumes as we cancel and skip completion functions.
+                Dispose(_volumes);
+
+                // Retrieve new volumes in case new devices were plugged or process output has changed.
+                var volumes = GetVolumes(processId);
+
+                if (!volumes.Any()) {
+                    return;
+                }
+
+                var currentVolume = volumes.Average(v => v.Volume);
+
+                _animEase = GameService.Animation.Tweener.Timer(duration)
+                                       .Ease(t => {
+                                            var delta     = (targetVolume - currentVolume) * t;
+                                            var newVolume = currentVolume + delta;
+
+                                            foreach (var v in volumes) {
+                                                v.Volume = newVolume > 1 ? 1 :
+                                                           newVolume < 0 ? 0 : newVolume;
+                                            }
+
+                                            return newVolume;
+                                        })
+                                       .OnComplete(() => {
+                                            Dispose(volumes);
+                                        });
+
+                _volumes = volumes.ToList();
+            });
         }
 
         private static void Dispose(List<SimpleAudioVolume> disposables) {

@@ -66,6 +66,8 @@ namespace Nekres.Music_Mixer {
         private const string DEFAULT_MUSIC_CHECK_URL = "https://api.github.com/repos/agaertner/bhm-music-engine/commits?path=default_music.json&page=1&per_page=1";
         private const string DEFAULT_MUSIC_URL       = "https://github.com/agaertner/bhm-music-engine/raw/main/default_music.json";
 
+        private double _lastRun;
+
         [ImportingConstructor]
         public MusicMixer([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters) { Instance = this; }
 
@@ -93,12 +95,13 @@ namespace Nekres.Music_Mixer {
             };
         }
 
-        protected override void Update(GameTime gameTime) {
-            this.Gw2State.Update();
-            this.Audio.AudioTrack?.Invalidate();
-            if (ModuleConfig.Value.Paused) {
-                this.Audio.Pause();
+        protected override async void Update(GameTime gameTime) {
+            if (gameTime.TotalGameTime.TotalMilliseconds - _lastRun < 10) {
+                return;
             }
+            _lastRun = gameTime.ElapsedGameTime.TotalMilliseconds;
+            this.Gw2State.Update();
+            this.Audio.Update();
         }
 
         public ProgressTotal GetModuleProgressHandler() {
@@ -120,7 +123,6 @@ namespace Nekres.Music_Mixer {
             if (ModuleConfig.Value.DefaultUpdates) {
                 var version   = BlishUtil.GetVersion();
                 var userAgent = string.IsNullOrEmpty(version) ? "Blish HUD" : version;
-
                 var commitDate = await TaskUtil.TryAsync(() => DEFAULT_MUSIC_CHECK_URL.WithHeader("User-Agent", userAgent).GetJsonListAsync(), Logger)
                                                .ContinueWith(t => {
                                                     var result = DateTime.MinValue;
@@ -130,7 +132,7 @@ namespace Nekres.Music_Mixer {
                                                     try {
                                                         result = DateTime.Parse(Convert.ToString(t.Result[0].commit.committer.date));
                                                     } catch (Exception e) {
-                                                        Logger.Warn(e, "Unexpected GitHub API response.");
+                                                        Logger.Warn(e, "Failed to request default music update: Unexpected GitHub API response.");
                                                     }
                                                     return result;
                                                 });

@@ -237,14 +237,12 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             _outputDevice.Play();
         }
 
-        public void ToggleSubmergedFx(bool enable)
-        {
+        public void ToggleSubmergedFx(bool enable) {
             if (IsEmpty 
              || _disposing 
              || _equalizer == null) {
                 return;
             }
-
             _lowPassFilter.Enabled = enable;
             _volumeProvider.Enabled = enable;
             _equalizer.SampleFilters[1].AverageGainDB = enable ? 19.5f : 0; // Bass
@@ -253,33 +251,20 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
         public void Dispose() {
             _disposing = true;
-
             if (IsEmpty) {
                 return;
             }
-
             _outputDevice.PlaybackStopped -= OnPlaybackStopped;
             _endOfStream.Ended            -= OnEndOfStreamReached;
-            DisposeMediaInterfaces();
-        }
-
-        public async Task DisposeAsync() {
-            _disposing = true;
-
-            if (IsEmpty) {
-                return;
-            }
-
-            _endOfStream.Ended -= OnEndOfStreamReached;
             _fadeInOut.BeginFadeOut(2000);
-            await Task.Delay(2005).ContinueWith(_ => {
+            Task.Delay(2005).ContinueWith(_ => {
+                _outputDevice.Stop();
                 DisposeMediaInterfaces();
             });
         }
 
         private void DisposeMediaInterfaces() {
             Source.VolumeChanged -= OnVolumeChanged;
-
             try {
                 _outputDevice?.Dispose();
                 _mediaProvider?.Dispose();
