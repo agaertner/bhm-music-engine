@@ -267,4 +267,23 @@
   <data name="Will finish the current song even if dismounted." xml:space="preserve">
     <value>Will finish the current song even if dismounted.</value>
   </data>
+  <data name="&quot;{0}&quot;\nis not available (Reason: {1})" xml:space="preserve">
+    <value>&quot;{0}&quot;
+is not available (Reason: {1})</value>
+  </data>
+  <data name="Deleted" xml:space="preserve">
+    <value>Deleted</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="Depublished" xml:space="preserve">
+    <value>Depublished</value>
+  </data>
+  <data name="Geo-Blocked" xml:space="preserve">
+    <value>Geo-Blocked</value>
+  </data>
+  <data name="Would you like to remove this track from all playlists?" xml:space="preserve">
+    <value>Would you like to remove this track from all playlists?</value>
+  </data>
 </root>

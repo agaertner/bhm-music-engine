@@ -11,14 +11,14 @@ namespace Nekres.Music_Mixer.Core.UI {
 
         private Effect _curvedBorder;
 
-        public AsyncTexture2D Texture;
+        public  AsyncTexture2D Texture;
 
         private SpriteBatchParameters _defaultParams;
         private SpriteBatchParameters _curvedBorderParams;
 
         private float _radius = 0.215f;
         private Tween _tween;
-
+        
         public RoundedImage() {
             _defaultParams = new();
             _curvedBorder  = MusicMixer.Instance.ContentsManager.GetEffect<Effect>(@"effects\curvedborder.mgfx");

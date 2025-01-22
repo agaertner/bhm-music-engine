@@ -56,7 +56,8 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 }
             }
 
-            _outputDevice = new WasapiOut(_device, AudioClientShareMode.Shared, false, 100);
+            _outputDevice                 =  new WasapiOut(_device, AudioClientShareMode.Shared, false, 100);
+            _outputDevice.PlaybackStopped += OnPlaybackStopped;
 
             _mediaProvider = new MediaFoundationReader(Source.AudioUrl);
             
@@ -76,6 +77,12 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             _equalizer = Equalizer.Create10BandEqualizer(_lowPassFilter);
 
             Invalidate();
+        }
+
+        private void OnPlaybackStopped(object sender, StoppedEventArgs e) {
+            if (e.Exception != null) {
+                this.Dispose();
+            }
         }
 
         public static async Task<AudioTrack> TryGetStream(AudioSource source, int retries = 3, int delayMs = 500, Logger logger = null)
@@ -127,8 +134,13 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             return AudioTrack.Empty;
         }
 
-        public async Task Play(int fadeInDuration = 500, int retries = 3, int delayMs = 500, Logger logger = null)
+        public async Task<bool> Play(int fadeInDuration = 500, int retries = 3, int delayMs = 500, Logger logger = null)
         {
+            if (IsEmpty
+             || _disposing
+             || _outputDevice == null) {
+                return false;
+            }
             logger ??= Logger.GetLogger(typeof(AudioTrack));
             try {
                 if (!_initialized) {
@@ -138,13 +150,12 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 _outputDevice.Play();
                 _fadeInOut.BeginFadeIn(fadeInDuration);
                 this.ToggleSubmergedFx(MusicMixer.Instance.Gw2State.IsSubmerged);
-
+                return true;
             } catch (Exception e) {
 
                 if (retries > 0) {
                     await Task.Delay(delayMs);
-                    await Play(fadeInDuration, retries - 1, delayMs,logger);
-                    return;
+                    return await Play(fadeInDuration, retries - 1, delayMs,logger);
                 }
 
                 switch (e) {
@@ -161,6 +172,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                         logger.Warn(e, e.Message);
                         break;
                 }
+                return false;
             }
         }
 
@@ -176,6 +188,9 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         private void SetVolume(float volume) {
+            if (IsEmpty) {
+                return;
+            }
             if (_volumeProvider != null) {
                 _volumeProvider.Volume = volume;
             }
@@ -219,7 +234,6 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
              || _outputDevice.PlaybackState != PlaybackState.Paused) {
                 return;
             }
-
             _outputDevice.Play();
         }
 
@@ -244,7 +258,8 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 return;
             }
 
-            _endOfStream.Ended -= OnEndOfStreamReached;
+            _outputDevice.PlaybackStopped -= OnPlaybackStopped;
+            _endOfStream.Ended            -= OnEndOfStreamReached;
             DisposeMediaInterfaces();
         }
 

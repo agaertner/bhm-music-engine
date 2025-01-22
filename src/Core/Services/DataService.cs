@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -32,11 +33,21 @@ namespace Nekres.Music_Mixer.Core.Services {
         private const string TBL_THUMBNAIL_CHUNKS = "thumbnail_chunks";
         private const string LITEDB_FILENAME      = "music.db";
 
+        private readonly ConcurrentBag<string> _unavailableSources;
+
+        public event EventHandler<ValueEventArgs<AudioSource>> SourceRemoved;
+
         public DataService() {
+            _unavailableSources = new ConcurrentBag<string>();
             _connectionString = new ConnectionString {
                 Filename   = Path.Combine(MusicMixer.Instance.ModuleDirectory, LITEDB_FILENAME),
-                Connection = ConnectionType.Shared
+                Connection = ConnectionType.Shared,
+                Upgrade = true
             };
+            BsonMapper.Global.RegisterType(
+                serialize: code => code.ToString(),
+                deserialize: bson => bson.IsNull ? YtDlpService.ErrorCode.Success : (YtDlpService.ErrorCode)Enum.Parse(typeof(YtDlpService.ErrorCode), bson.AsString, true)
+            );
         }
 
         public string ExportToJson() {
@@ -79,7 +90,6 @@ namespace Nekres.Music_Mixer.Core.Services {
                 if (!MusicMixer.Instance.YtDlp.GetYouTubeVideoId(track.Url, out string externalId)) {
                     return AudioSource.Empty;
                 };
-
                 return new AudioSource {
                     ExternalId = externalId,
                     Title      = track.Title,
@@ -193,6 +203,16 @@ namespace Nekres.Music_Mixer.Core.Services {
             }
         }
 
+        public void AddSourceToSkips(string externalId) {
+            if (!_unavailableSources.Any(x => x.Equals(externalId))) {
+                _unavailableSources.Add(externalId);
+            }
+        }
+
+        public List<AudioSource> FilterTracks(List<AudioSource> tracks) {
+            return tracks.Where(x => !_unavailableSources.Any(y => y.Equals(x.ExternalId))).ToList();
+        }
+
         public Playlist GetMountPlaylist(MountType mountType) {
             return GetPlaylist(mountType.ToString());
         }
@@ -211,7 +231,11 @@ namespace Nekres.Music_Mixer.Core.Services {
                 using var db = new LiteDatabase(_connectionString);
 
                 var collection = db.GetCollection<AudioSource>(TBL_AUDIO_SOURCES);
-                return collection.Delete(model.Id);
+                var isDeleted = collection.Delete(model.Id);
+                if (isDeleted) {
+                    SourceRemoved?.Invoke(this, new ValueEventArgs<AudioSource>(model));
+                }
+                return isDeleted;
             } finally {
                 this.ReleaseWriteLock();
             }
@@ -234,6 +258,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                     Volume     = src.Volume,
                     DayCycles  = src.DayCycles,
                     Default    = src.Default,
+                    LastError  = src.LastError,
                     AudioUrl   = string.Empty
                 }, src => true);
             } finally {
