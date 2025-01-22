@@ -130,7 +130,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 GameService.Content.PlaySoundEffectByName("button-click");
                 var config = MusicMixer.Instance.ModuleConfig.Value;
                 if (!config.Paused) {
-                    MusicMixer.Instance.Audio.Stop();
+                    MusicMixer.Instance.Audio.Reset();
                     await MusicMixer.Instance.Audio.NextSong(MusicMixer.Instance.Gw2State.CurrentState);
                 }
             };

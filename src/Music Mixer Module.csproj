@@ -60,9 +60,17 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\submodules\bhud-extended\**\*.cs" Link="_Submodules\%(RecursiveDir)%(Filename)%(Extension)" />
-    <Compile Remove="..\submodules\**\AssemblyInfo.cs" />
-    <Compile Include="Core\Extensions\MountTypeExtensions.cs" />
+      <Compile Include="..\submodules\bhud-extended\**\*.cs" Link="_Submodules\%(RecursiveDir)%(Filename)%(Extension)"/>
+      <EmbeddedResource Include="..\submodules\bhud-extended\**\Properties\*.resx" Link="_Submodules\%(RecursiveDir)%(Filename)%(Extension)">
+          <!--Required to make the ResourceManager find translations -->
+          <LogicalName>Blish_HUD.Extended.Properties.%(Filename).resources</LogicalName>
+          <Visible>False</Visible>
+      </EmbeddedResource>
+      <!-- Exclude AssemblyInfo.cs of submodule projects to avoid duplication error (Compile Error CS0579) -->
+      <Compile Remove="..\submodules\**\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+      <Compile Include="Core\Extensions\MountTypeExtensions.cs" />
     <Compile Include="Core\Extensions\ObjectExtensions.cs" />
     <Compile Include="Core\Extensions\StringExtensions.cs" />
     <Compile Include="Core\Services\Audio\Source\SubmergedVolumeProvider.cs" />
@@ -87,7 +95,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="..\submodules\bhud-extended\**\Resources\*.png" Link="_Submodules\%(RecursiveDir)%(Filename)%(Extension)" />
     <EmbeddedResource Include="Properties\Resources.de.resx" />
     <EmbeddedResource Include="Properties\Resources.es.resx" />
     <EmbeddedResource Include="Properties\Resources.fr.resx" />

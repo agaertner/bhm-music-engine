@@ -28,11 +28,25 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 Enabled = true
             };
             _pasteShortcut.Activated += OnPastePressed;
+            MusicMixer.Instance.Data.SourceRemoved += OnSourceRemoved;
+        }
+
+        private void OnSourceRemoved(object sender, ValueEventArgs<AudioSource> e) {
+            _playlist.Tracks.RemoveAll(x => x.Id.Equals(e.Value.Id));
+            var bgmContainers = _tracksPanel.Children.Cast<ViewContainer>();
+            foreach (var container in bgmContainers) {
+                var bgmEntry = (BgmEntry)container.CurrentView;
+                if (bgmEntry.AudioSource.Id.Equals(e.Value.Id)) {
+                    container.Dispose();
+                    break;
+                }
+            }
         }
 
         protected override void Unload() {
-            _pasteShortcut.Enabled   =  false;
-            _pasteShortcut.Activated -= OnPastePressed;
+            MusicMixer.Instance.Data.SourceRemoved -= OnSourceRemoved;
+            _pasteShortcut.Enabled                 =  false;
+            _pasteShortcut.Activated               -= OnPastePressed;
             base.Unload();
         }
 
@@ -224,58 +238,70 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
 
             public event EventHandler<EventArgs> OnDeleted;
 
-            private AudioSource _audioSource;
+            public readonly AudioSource AudioSource;
 
             public BgmEntry(AudioSource audioSource) {
-                _audioSource = audioSource;
+                AudioSource = audioSource;
             }
 
             protected override void Build(Container buildPanel) {
 
-                var slidePanel = new SlidePanel {
+                /*var slidePanel = new SlidePanel {
                     Parent = buildPanel,
                     Width = buildPanel.ContentRegion.Width,
                     Height = buildPanel.ContentRegion.Height,
                     Left = buildPanel.ContentRegion.Width
-                };
+                };*/
 
                 var thumbnail = new RoundedImage {
-                    Parent  = slidePanel,
+                    Parent  = buildPanel,
                     Width   = 192, // 16:9
                     Height  = 108,
-                    Texture = _audioSource.Thumbnail,
+                    Texture = AudioSource.Thumbnail
                 };
 
                 thumbnail.Click += async (_,_) => {
-                    if (string.IsNullOrWhiteSpace(_audioSource.PageUrl)) {
+                    if (string.IsNullOrWhiteSpace(AudioSource.PageUrl)) {
                         ScreenNotification.ShowNotification(Resources.Page_Not_Found_, ScreenNotification.NotificationType.Error);
                         GameService.Content.PlaySoundEffectByName("error");
                     } else {
                         //Process.Start(_audioSource.PageUrl);
-                        await MusicMixer.Instance.Audio.Play(_audioSource);
+                        await MusicMixer.Instance.Audio.Play(AudioSource);
                         GameService.Content.PlaySoundEffectByName("open-skill-slot");
                     }
                 };
 
-                var durationStr = _audioSource.Duration.ToShortForm();
+                if (AudioSource.HasError) {
+                    var image = new Image {
+                        Parent           = buildPanel,
+                        Left             = thumbnail.Width - 32,
+                        Width            = 32,
+                        Height           = 32,
+                        Texture          = GameService.Content.DatAssetCache.GetTextureFromAssetId(154982),
+                        BasicTooltipText = AudioSource.GetErrorMessage(),
+                        BackgroundColor  = Color.Black * 0.7f
+                    };
+                }
+
+                var durationStr = AudioSource.Duration.ToShortForm();
                 var size = LabelUtil.GetLabelSize(ContentService.FontSize.Size14, durationStr);
                 var duration = new FormattedLabelBuilder().SetWidth(size.X + Panel.RIGHT_PADDING).SetHeight(size.Y + 4)
                                                           .SetHorizontalAlignment(HorizontalAlignment.Center)
                                                           .CreatePart(durationStr, o => {
                                                               o.SetFontSize(ContentService.FontSize.Size14);
                                                           }).Build();
-                duration.Parent = slidePanel;
-                duration.Bottom = thumbnail.Bottom;
-                duration.Right = thumbnail.Right;
+                duration.Parent          = buildPanel;
+                duration.Bottom          = thumbnail.Bottom;
+                duration.Right           = thumbnail.Right;
                 duration.BackgroundColor = Color.Black * 0.25f;
 
                 var delBttn = new Image {
-                    Parent = slidePanel,
-                    Width = 32,
-                    Height = 32,
-                    Right = slidePanel.ContentRegion.Width - Panel.RIGHT_PADDING - 13 /*SCROLLBAR_WIDTH*/,
-                    Top = thumbnail.Top,
-                    Texture = GameService.Content.DatAssetCache.GetTextureFromAssetId(156012),
+                    Parent           = buildPanel,
+                    Width            = 32,
+                    Height           = 32,
+                    Right            = buildPanel.ContentRegion.Width - Panel.RIGHT_PADDING - 13 /*SCROLLBAR_WIDTH*/,
+                    Top              = thumbnail.Top,
+                    Texture          = GameService.Content.DatAssetCache.GetTextureFromAssetId(156012),
                     BasicTooltipText = Resources.Remove_from_Playlist
                 };
 
@@ -292,41 +318,41 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
 
                     delBttn.Texture = GameService.Content.DatAssetCache.GetTextureFromAssetId(156012);
 
-                    slidePanel.SlideOut(buildPanel.Dispose);
+                    //slidePanel.SlideOut(buildPanel.Dispose);
 
                     GameService.Content.PlaySoundEffectByName("window-close");
 
                     OnDeleted?.Invoke(this, EventArgs.Empty);
                 };
 
-                var title = new FormattedLabelBuilder().SetWidth(slidePanel.ContentRegion.Width -
+                var title = new FormattedLabelBuilder().SetWidth(buildPanel.ContentRegion.Width -
                                                                  thumbnail.Right - delBttn.Width -
                                                                  Panel.RIGHT_PADDING - 13 - Control.ControlStandard.ControlOffset.X * 3)
                                                        .SetHeight(thumbnail.Height)
                                                        .SetVerticalAlignment(VerticalAlignment.Top)
-                                                       .CreatePart(_audioSource.Title, o => {
+                                                       .CreatePart(AudioSource.Title, o => {
                                                            o.SetFontSize(ContentService.FontSize.Size20);
                                                            o.MakeBold();
-                                                           if (string.IsNullOrWhiteSpace(_audioSource.PageUrl)) {
+                                                           if (string.IsNullOrWhiteSpace(AudioSource.PageUrl)) {
                                                                o.SetLink(() => ScreenNotification.ShowNotification(Resources.Page_Not_Found_, ScreenNotification.NotificationType.Error));
                                                                GameService.Content.PlaySoundEffectByName("error");
                                                            } else {
                                                                o.SetLink(() => {
-                                                                   Process.Start(_audioSource.PageUrl);
+                                                                   Process.Start(AudioSource.PageUrl);
                                                                    GameService.Content.PlaySoundEffectByName("open-skill-slot");
                                                                });
-                                                           }}).Wrap().CreatePart($"\n{_audioSource.Uploader}", o => { 
+                                                           }}).Wrap().CreatePart($"\n{AudioSource.Uploader}", o => { 
                                                             o.SetFontSize(ContentService.FontSize.Size16);
                                                        }).Build();
-                title.Parent = slidePanel;
-                title.Top = thumbnail.Top;
-                title.Left = thumbnail.Right + Control.ControlStandard.ControlOffset.X;
+                title.Parent = buildPanel;
+                title.Top    = thumbnail.Top;
+                title.Left   = thumbnail.Right + Control.ControlStandard.ControlOffset.X;
 
                 var cyclesPanel = new FlowPanel {
-                    Parent              = slidePanel,
+                    Parent              = buildPanel,
                     Width               = 140,
                     Height              = 32,
-                    Right               = slidePanel.ContentRegion.Width - Panel.RIGHT_PADDING,
+                    Right               = buildPanel.ContentRegion.Width - Panel.RIGHT_PADDING,
                     Bottom              = thumbnail.Bottom,
                     FlowDirection       = ControlFlowDirection.SingleLeftToRight,
                     ControlPadding      = new Vector2(Control.ControlStandard.ControlOffset.X, 0),
@@ -340,27 +366,27 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                         Width   = 100,
                         Height  = 32,
                         Text    = cycle == AudioSource.DayCycle.Day ? Resources.Day : Resources.Night,
-                        Checked = _audioSource.HasDayCycle(cycle)
+                        Checked = AudioSource.HasDayCycle(cycle)
                     };
 
                     cb.CheckedChanged += (_, e) => {
 
-                        if ((_audioSource.DayCycles & ~cycle) == AudioSource.DayCycle.None) {
+                        if ((AudioSource.DayCycles & ~cycle) == AudioSource.DayCycle.None) {
                             // At least one cycle must be selected
                             cb.GetPrivateField("_checked").SetValue(cb, !e.Checked); // Skip invoking CheckedChanged
                             GameService.Content.PlaySoundEffectByName("error");
                             return;
                         }
 
-                        var oldCycles = _audioSource.DayCycles;
+                        var oldCycles = AudioSource.DayCycles;
                         if (e.Checked) {
-                            _audioSource.DayCycles |= cycle;
+                            AudioSource.DayCycles |= cycle;
                         } else {
-                            _audioSource.DayCycles &= ~cycle;
+                            AudioSource.DayCycles &= ~cycle;
                         }
 
-                        if (!MusicMixer.Instance.Data.Upsert(_audioSource)) {
-                            _audioSource.DayCycles = oldCycles;
+                        if (!MusicMixer.Instance.Data.Upsert(AudioSource)) {
+                            AudioSource.DayCycles = oldCycles;
                             cb.GetPrivateField("_checked").SetValue(cb, !e.Checked); // Skip invoking CheckedChanged
                             ScreenNotification.ShowNotification(Resources.Something_went_wrong__Please_try_again_, ScreenNotification.NotificationType.Error);
                             GameService.Content.PlaySoundEffectByName("error");
@@ -371,7 +397,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                     };
                 }
 
-                slidePanel.SlideIn();
+                //slidePanel.SlideIn();
 
                 base.Build(buildPanel);
             }

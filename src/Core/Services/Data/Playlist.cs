@@ -34,7 +34,7 @@ namespace Nekres.Music_Mixer.Core.Services.Data {
                 return AudioSource.Empty;
             }
 
-            var cycle = this.Tracks.Where(x => x.HasDayCycle(dayCycle)).ToList();
+            var cycle = MusicMixer.Instance.Data.FilterTracks(this.Tracks).Where(x => x.HasDayCycle(dayCycle)).ToList();
 
             if (!cycle.Any()) {
                 return AudioSource.Empty;

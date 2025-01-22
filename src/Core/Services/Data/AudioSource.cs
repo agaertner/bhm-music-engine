@@ -1,8 +1,8 @@
 ﻿using Blish_HUD;
-using LiteDB;
-using System;
 using Blish_HUD.Content;
-
+using LiteDB;
+using Nekres.Music_Mixer.Properties;
+using System;
 namespace Nekres.Music_Mixer.Core.Services.Data {
     public class AudioSource : DbEntity {
 
@@ -63,6 +63,12 @@ namespace Nekres.Music_Mixer.Core.Services.Data {
         [BsonField("default")]
         public bool? Default { get; set; }
 
+        [BsonField("last_error")]
+        public YtDlpService.ErrorCode? LastError { get; set; }
+
+        [BsonIgnore]
+        public bool HasError => this.LastError.HasValue && this.LastError > 0;
+
         private AsyncTexture2D _thumbnail;
         [BsonIgnore]
         public AsyncTexture2D Thumbnail {
@@ -87,6 +93,19 @@ namespace Nekres.Music_Mixer.Core.Services.Data {
 
         public bool HasDayCycle(DayCycle cycle) {
             return (DayCycles & cycle) == cycle;
+        }
+
+        public string GetErrorMessage() {
+            if (!HasError) {
+                return string.Empty;
+            }
+            var reason = this.LastError switch {
+                YtDlpService.ErrorCode.Deleted     => Resources.Deleted,
+                YtDlpService.ErrorCode.Depublished => Resources.Depublished,
+                YtDlpService.ErrorCode.Geoblocked  => Resources.Geo_Blocked,
+                _                                  => Resources.Unknown
+            };
+            return string.Format(Resources.__0___nis_not_available__Reason___1__, this.Title, reason);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Blish_HUD;
 using Gapotchenko.FX.Diagnostics;
+using Nekres.Music_Mixer.Core.Services.Data;
 using Nekres.Music_Mixer.Core.Services.YtDlp;
 using System;
 using System.Diagnostics;
@@ -28,6 +29,15 @@ namespace Nekres.Music_Mixer.Core.Services {
             B320
         }
 
+        public enum ErrorCode {
+            Success,
+            Unknown,
+            Ratelimited,
+            Depublished,
+            Geoblocked,
+            Deleted
+        }
+
         private readonly Regex _mediaId        = new("^([a-zA-Z0-9_-]+)$", RegexOptions.Compiled);
         private readonly Regex _youtubeVideoId = new(@"youtu(?:\.be|be\.com)/(?:.*v(?:/|=)|(?:.*/)?)(?<id>[a-zA-Z0-9-_]+).*", RegexOptions.Compiled);
         private readonly Regex _progressReport = new(@"^\[download\].*?(?<percentage>(.*?))% of (?<size>(.*?))MiB at (?<speed>(.*?)) ETA (?<eta>(.*?))$", RegexOptions.Compiled); //[download]   2.7% of 4.62MiB at 200.00KiB/s ETA 00:23
@@ -42,8 +52,9 @@ namespace Nekres.Music_Mixer.Core.Services {
 
         private Logger _logger = Logger.GetLogger(typeof(YtDlpService));
 
-        private const string _globalYtDlpArgs = "--ignore-config --no-call-home --no-warnings --no-get-comments --extractor-retries 0 "
-                                              + "--extractor-args \"youtube:max_comments=0;player_client=web,web_music;skip=configs,webpage\"";
+        // Do not player_skip=webpage as relying solely on API often responds with "Sign in to confirm you are not a bot".
+        private const string _globalYtDlpArgs = "--ignore-config --no-warnings --no-get-comments --extractor-retries 0 "
+                                              + "--extractor-args \"youtube:max_comments=0\""; // player_client=default
 
         public YtDlpService() {
             ExtractFile("bin/yt-dlp.exe");
@@ -175,7 +186,7 @@ namespace Nekres.Music_Mixer.Core.Services {
             p.BeginOutputReadLine();
         }
 
-        public async Task<string> GetAudioOnlyUrl(string link)
+        public async Task<ErrorCode> GetAudioOnlyUrl(AudioSource source)
         {
             using var p = new Process
             {
@@ -183,26 +194,45 @@ namespace Nekres.Music_Mixer.Core.Services {
                 {
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     UseShellExecute = false,
                     FileName = _executablePath,
                     Arguments = string.Format("-g {0} -f \"bestaudio[ext=m4a][abr<={1}]/bestaudio[ext=aac][abr<={1}]/bestaudio[abr<={1}]/bestaudio\" {2}", 
-                                              link, 
+                                              source.PageUrl, 
                                               MusicMixer.Instance.ModuleConfig.Value.AverageBitrate.ToString().Substring(1), 
                                               _globalYtDlpArgs)
                 }
             };
-            var result = string.Empty;
+            var reason = ErrorCode.Unknown;
             p.OutputDataReceived += (_, e) =>
             {
                 if (string.IsNullOrWhiteSpace(e.Data) || e.Data.ToLower().StartsWith("error")) {
                     return;
                 }
-                result = e.Data;
+                source.AudioUrl = e.Data;
+                reason = ErrorCode.Success;
+            };
+            p.ErrorDataReceived += (_, e) => {
+                if (string.IsNullOrWhiteSpace(e.Data)) {
+                    return;
+                }
+                MusicMixer.Logger.Warn(e.Data);
+                reason = ErrorCode.Unknown; // "This video is not available"
+                if (e.Data.Contains("terminated") || e.Data.Contains("deleted") || e.Data.Contains("removed")) { // "This video is no longer available because the YouTube account associated with this video has been terminated."
+                    reason = ErrorCode.Deleted;
+                } else if (e.Data.Contains("private")) { // "This video is private. If the owner of this video has granted you access, please sign in."
+                    reason = ErrorCode.Depublished;
+                } else if (e.Data.Contains("blocked")) { // "Video unavailable. This video contains content from <brand>, who has blocked it in your country on copyright grounds"
+                    reason = ErrorCode.Geoblocked;
+                } else if (e.Data.Contains("Sign in")) { // "Sign in to confirm you’re not a bot."
+                    reason = ErrorCode.Ratelimited;
+                }
             };
             p.Start();
             p.BeginOutputReadLine();
+            p.BeginErrorReadLine();
             await p.WaitForExitAsync();
-            return result;
+            return reason;
         }
 
         public async Task<MetaData> GetMetaData(string link)

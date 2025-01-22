@@ -61,6 +61,16 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to &quot;{0}&quot;
+        ///is not available (Reason: {1}).
+        /// </summary>
+        internal static string @__0___nis_not_available__Reason___1__ {
+            get {
+                return ResourceManager.GetString("\"{0}\"\\nis not available (Reason: {1})", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} is ready..
         /// </summary>
         internal static string _0__is_ready_ {
@@ -124,6 +134,24 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Deleted.
+        /// </summary>
+        internal static string Deleted {
+            get {
+                return ResourceManager.GetString("Deleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Depublished.
+        /// </summary>
+        internal static string Depublished {
+            get {
+                return ResourceManager.GetString("Depublished", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Done..
         /// </summary>
         internal static string Done_ {
@@ -147,6 +175,15 @@ namespace Nekres.Music_Mixer.Properties {
         internal static string Enabled {
             get {
                 return ResourceManager.GetString("Enabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Geo-Blocked.
+        /// </summary>
+        internal static string Geo_Blocked {
+            get {
+                return ResourceManager.GetString("Geo-Blocked", resourceCulture);
             }
         }
         
@@ -457,6 +494,15 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Unknown.
+        /// </summary>
+        internal static string Unknown {
+            get {
+                return ResourceManager.GetString("Unknown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Unsupported website..
         /// </summary>
         internal static string Unsupported_website_ {
@@ -498,6 +544,15 @@ namespace Nekres.Music_Mixer.Properties {
         internal static string Will_finish_the_current_song_even_if_dismounted_ {
             get {
                 return ResourceManager.GetString("Will finish the current song even if dismounted.", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Would you like to remove this track from all playlists?.
+        /// </summary>
+        internal static string Would_you_like_to_remove_this_track_from_all_playlists_ {
+            get {
+                return ResourceManager.GetString("Would you like to remove this track from all playlists?", resourceCulture);
             }
         }
         
