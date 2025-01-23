@@ -246,14 +246,14 @@ namespace Nekres.Music_Mixer.Core.Services {
                     RedirectStandardError  = true,
                     UseShellExecute        = false,
                     FileName               = _executablePath,
-                    Arguments              = $"--print id,webpage_url,title,uploader,channel,duration {link} {_globalYtDlpArgs}" // Url is supported if we get any results.
+                    Arguments              = $"--print id,webpage_url,title,channel,uploader,duration {link} {_globalYtDlpArgs}" // Url is supported if we get any results.
                 }
             };
 
             string   externalId = string.Empty;
             string   url        = string.Empty;
             string   title      = string.Empty;
-            string   uploader   = string.Empty;
+            string   channel   = string.Empty;
             TimeSpan duration   = TimeSpan.Zero;
 
             int i = 0;
@@ -278,10 +278,10 @@ namespace Nekres.Music_Mixer.Core.Services {
                         title = e.Data;
                         break;
                     case 3:
-                        uploader = e.Data;
+                        channel = e.Data;
                         break;
                     case 4:
-                        uploader = string.IsNullOrWhiteSpace(uploader) ? e.Data : uploader; // Use channel name if uploader empty.
+                        channel = string.IsNullOrWhiteSpace(channel) ? e.Data : channel; // Use uploader name if channel empty.
                         break;
                     case 5:
                         duration = int.TryParse(Regex.Replace(e.Data, "[^0-9]", string.Empty), out var dur) ? 
@@ -306,7 +306,7 @@ namespace Nekres.Music_Mixer.Core.Services {
             p.BeginOutputReadLine();
             p.BeginErrorReadLine();
             await p.WaitForExitAsync();
-            return new MetaData(externalId, title, url, uploader, duration);
+            return new MetaData(externalId, title, url, channel, duration);
         }
 
         /*
