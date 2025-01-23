@@ -257,17 +257,21 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                     Parent  = buildPanel,
                     Width   = 192, // 16:9
                     Height  = 108,
-                    Texture = AudioSource.Thumbnail
+                    Texture = AudioSource.Thumbnail,
+                    BasicTooltipText = string.Format(Resources.Play__0__by__1_, AudioSource.Title, AudioSource.Uploader)
                 };
 
                 thumbnail.Click += async (_,_) => {
-                    if (string.IsNullOrWhiteSpace(AudioSource.PageUrl)) {
-                        ScreenNotification.ShowNotification(Resources.Page_Not_Found_, ScreenNotification.NotificationType.Error);
-                        GameService.Content.PlaySoundEffectByName("error");
-                    } else {
-                        //Process.Start(_audioSource.PageUrl);
-                        await MusicMixer.Instance.Audio.Play(AudioSource);
-                        GameService.Content.PlaySoundEffectByName("open-skill-slot");
+                    if (!MusicMixer.Instance.Audio.Loading) {
+                        if (string.IsNullOrWhiteSpace(AudioSource.PageUrl)) {
+                            GameService.Content.PlaySoundEffectByName("error");
+                            ScreenNotification.ShowNotification(Resources.Page_Not_Found_, ScreenNotification.NotificationType.Error);
+                        } else {
+                            thumbnail.ShowLoadingSpinner = true;
+                            GameService.Content.PlaySoundEffectByName("open-skill-slot");
+                            await MusicMixer.Instance.Audio.Play(AudioSource);
+                            thumbnail.ShowLoadingSpinner = false;
+                        }
                     }
                 };
 

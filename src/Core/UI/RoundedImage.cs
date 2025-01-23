@@ -11,7 +11,8 @@ namespace Nekres.Music_Mixer.Core.UI {
 
         private Effect _curvedBorder;
 
-        public  AsyncTexture2D Texture;
+        public AsyncTexture2D Texture;
+        public bool           ShowLoadingSpinner;
 
         private SpriteBatchParameters _defaultParams;
         private SpriteBatchParameters _curvedBorderParams;
@@ -45,6 +46,18 @@ namespace Nekres.Music_Mixer.Core.UI {
             base.OnMouseLeft(e);
         }
 
+        protected override void OnLeftMouseButtonPressed(MouseEventArgs e) {
+            _tween?.Cancel();
+            _tween = Animation.Tweener.Tween(this, new {_radius = 0.415f}, 0.03f);
+            base.OnLeftMouseButtonPressed(e);
+        }
+
+        protected override void OnLeftMouseButtonReleased(MouseEventArgs e) {
+            _tween?.Cancel();
+            _tween = Animation.Tweener.Tween(this, new { _radius = 0.315f }, 0.05f);
+            base.OnLeftMouseButtonReleased(e);
+        }
+
         protected override void Paint(SpriteBatch spriteBatch, Rectangle bounds) {
             if (Texture == null || !Texture.HasTexture || !Texture.HasSwapped) {
                 LoadingSpinnerUtil.DrawLoadingSpinner(this, spriteBatch, new Rectangle((bounds.Width - 32) / 2, (bounds.Height - 32) / 2, 32, 32));
@@ -59,6 +72,10 @@ namespace Nekres.Music_Mixer.Core.UI {
             spriteBatch.DrawOnCtrl(this, Texture, new Rectangle(0, 0, this.Width, this.Height));
             spriteBatch.End();
             spriteBatch.Begin(_defaultParams);
+
+            if (ShowLoadingSpinner) {
+                LoadingSpinnerUtil.DrawLoadingSpinner(this, spriteBatch, new Rectangle((bounds.Width - 64) / 2, (bounds.Height - 64) / 2, 64, 64));
+            }
         }
 
     }

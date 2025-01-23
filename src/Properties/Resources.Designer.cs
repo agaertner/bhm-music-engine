@@ -359,6 +359,15 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Play {0} by {1}.
+        /// </summary>
+        internal static string Play__0__by__1_ {
+            get {
+                return ResourceManager.GetString("Play {0} by {1}", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Play to completion..
         /// </summary>
         internal static string Play_to_completion_ {

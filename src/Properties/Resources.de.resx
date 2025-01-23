@@ -294,6 +294,8 @@ ist nicht verfügbar (Grund: {1})</value>
   </data>
   <data name="Copy Playlists" xml:space="preserve">
     <value>Kopiere Wiedergabelisten</value>
-    <comment>Fuzzy</comment>
+  </data>
+  <data name="Play {0} by {1}" xml:space="preserve">
+    <value>{0} von {1} abspielen</value>
   </data>
 </root>

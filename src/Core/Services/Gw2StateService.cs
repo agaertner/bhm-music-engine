@@ -82,6 +82,10 @@ namespace Nekres.Music_Mixer.Core.Services {
             1419, 1426, 1435, 1444, 1462 // Isle of Reflection
         };
 
+        private int[] _homesteadIds = {
+            1558 // Hearth's Glow 
+        };
+
         public Gw2StateService() {
 
             _inCombatTimer                =  new NTimer(6500) { AutoReset = false };
@@ -102,8 +106,9 @@ namespace Nekres.Music_Mixer.Core.Services {
                     CurrentState = newState;
                     break;
                 case State.Mounted:
-                    if (GameService.Gw2Mumble.CurrentMap.Type.IsPublic() ||
-                        _guildHallIds.Contains(GameService.Gw2Mumble.CurrentMap.Id)) 
+                    if (GameService.Gw2Mumble.CurrentMap.Type.IsPublic() 
+                     || _homesteadIds.Contains(GameService.Gw2Mumble.CurrentMap.Id)
+                     || _guildHallIds.Contains(GameService.Gw2Mumble.CurrentMap.Id))
                     {
                         CurrentState = newState;
                     }
