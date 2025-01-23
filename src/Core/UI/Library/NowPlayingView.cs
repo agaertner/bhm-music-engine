@@ -1,16 +1,16 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Controls;
 using Blish_HUD.Graphics.UI;
+using Blish_HUD.Input;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Nekres.Music_Mixer.Core.Services.Data;
 using Nekres.Music_Mixer.Properties;
 using System;
 using System.Diagnostics;
 using System.Threading;
-using System.Threading.Tasks;
 using Color = Microsoft.Xna.Framework.Color;
 using Container = Blish_HUD.Controls.Container;
-
 namespace Nekres.Music_Mixer.Core.UI.Library {
     internal class NowPlayingView : View {
 
@@ -18,9 +18,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
         private bool      _unloading;
         private Container _buildPanel;
 
-        private Texture2D _playTex;
-        private Texture2D _pauseTex;
-        private Texture2D _stopTex;
+        //private Texture2D _stopTex;
         private Texture2D _nextTex;
 
         // Track info
@@ -38,11 +36,8 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
 
             MusicMixer.Instance.Audio.MusicChanged += OnMusicChanged;
 
-            _source = MusicMixer.Instance.Audio.AudioTrack?.Source;
-            
-            _playTex  = MusicMixer.Instance.ContentsManager.GetTexture("play.png");
-            _pauseTex = MusicMixer.Instance.ContentsManager.GetTexture("pause.png");
-            _stopTex  = MusicMixer.Instance.ContentsManager.GetTexture("stop.png");
+            _source  = MusicMixer.Instance.Audio.AudioTrack?.Source;
+            //_stopTex = MusicMixer.Instance.ContentsManager.GetTexture("stop.png");
             _nextTex = MusicMixer.Instance.ContentsManager.GetTexture("next.png");
         }
 
@@ -53,6 +48,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
 
         protected override void Unload() {
             _unloading = true;
+            _nextTex.Dispose();
             MusicMixer.Instance.Audio.MusicChanged -= OnMusicChanged;
         }
 
@@ -78,8 +74,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
         protected override void Build(Container buildPanel) {
             _buildPanel = buildPanel;
 
-            var playBttn = new Image {
-                Texture = MusicMixer.Instance.ModuleConfig.Value.Paused ? _playTex : _pauseTex,
+            var playBttn = new PlayButton {
                 Parent  = buildPanel,
                 Width   = 28,
                 Height  = 28,
@@ -88,25 +83,13 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 BasicTooltipText = MusicMixer.Instance.ModuleConfig.Value.Paused ? Resources.Continue : Resources.Pause
             };
 
-            playBttn.MouseEntered += (_, _) => {
-                playBttn.Tint = Color.White * 0.8f;
-            };
-
-            playBttn.MouseLeft += (_, _) => {
-                playBttn.Tint = Color.White;
-            };
-
             playBttn.Click += (_, _) => {
                 GameService.Content.PlaySoundEffectByName("button-click");
                 var config = MusicMixer.Instance.ModuleConfig.Value;
                 config.Paused = !config.Paused;
                 if (config.Paused) {
-                    playBttn.Texture = _playTex;
-                    playBttn.BasicTooltipText = Resources.Resume;
                     MusicMixer.Instance.Audio.Pause();
                 } else {
-                    playBttn.Texture = _pauseTex;
-                    playBttn.BasicTooltipText = Resources.Pause;
                     MusicMixer.Instance.Audio.Resume();
                 }
             };
@@ -132,8 +115,6 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                 if (!MusicMixer.Instance.Audio.Loading) {
                     MusicMixer.Instance.Audio.Reset();
                     MusicMixer.Instance.ModuleConfig.Value.Paused = false;
-                    playBttn.Texture = _pauseTex;
-                    playBttn.BasicTooltipText = Resources.Pause;
                 }
             };
             _thumbnail = new RoundedImage {
@@ -241,6 +222,43 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
             }
 
             MusicMixer.Instance.Audio.AudioTrack.Seek(((TrackBar)sender).Value);
+        }
+
+        private class PlayButton : Image {
+            private Texture2D _playTex;
+            private Texture2D _pauseTex;
+            public PlayButton() {
+                _playTex  = MusicMixer.Instance.ContentsManager.GetTexture("play.png");
+                _pauseTex = MusicMixer.Instance.ContentsManager.GetTexture("pause.png");
+
+            }
+
+            protected override void DisposeControl() {
+                _playTex?.Dispose();
+                _pauseTex?.Dispose();
+                base.DisposeControl();
+            }
+
+            protected override void OnMouseEntered(MouseEventArgs e) {
+                this.Tint = Color.White * 0.8f;
+                base.OnMouseEntered(e);
+            }
+
+            protected override void OnMouseLeft(MouseEventArgs e) {
+                this.Tint = Color.White;
+                base.OnMouseLeft(e);
+            }
+
+            public override void DoUpdate(GameTime gameTime) {
+                if (MusicMixer.Instance.ModuleConfig.Value.Paused) {
+                    this.Texture          = _playTex;
+                    this.BasicTooltipText = Resources.Continue;
+                } else {
+                    this.Texture          = _pauseTex;
+                    this.BasicTooltipText = Resources.Pause;
+                }
+                base.DoUpdate(gameTime);
+            }
         }
     }
 }

@@ -12,7 +12,6 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-
 namespace Nekres.Music_Mixer.Core.UI.Library {
     public class BgmLibraryView : View {
 
@@ -277,6 +276,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                             thumbnail.ShowLoadingSpinner = true;
                             GameService.Content.PlaySoundEffectByName("open-skill-slot");
                             await MusicMixer.Instance.Audio.Play(AudioSource);
+                            MusicMixer.Instance.ModuleConfig.Value.Paused = false;
                             thumbnail.ShowLoadingSpinner = false;
                         }
                     }
