@@ -1,4 +1,5 @@
-﻿using Blish_HUD.Controls;
+﻿using Blish_HUD;
+using Blish_HUD.Controls;
 using Blish_HUD.Graphics.UI;
 using Microsoft.Xna.Framework.Graphics;
 using Nekres.Music_Mixer.Core.Services.Data;
@@ -8,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using MountType = Gw2Sharp.Models.MountType;
-
 namespace Nekres.Music_Mixer.Core.UI.Playlists {
 
     public class MountPlaylistsView : View {
@@ -54,28 +54,30 @@ namespace Nekres.Music_Mixer.Core.UI.Playlists {
             var mountTypes = Enum.GetValues(typeof(MountType)).Cast<MountType>().Skip(1);
 
             foreach (var mountType in mountTypes) {
-
                 var name = mountType.FriendlyName();
-
                 var mountItem = new MenuItem {
                     Text   = name,
                     BasicTooltipText = name,
                     Parent = menu,
                     Icon   = _icons[mountType]
                 };
-
                 mountItem.Click += (_, _) => {
-
-                    Playlist context = MusicMixer.Instance.Data.GetMountPlaylist(mountType) ?? new Playlist {
-                        ExternalId = mountType.ToString(),
-                        Enabled    = true,
-                        Tracks     = new List<AudioSource>()
-                    };
+                    var context = GetMountPlaylist(mountType);
                     bgmLibraryContainer.Show(new BgmLibraryView(context, name));
                 };
             }
-
+            var currentMount = GameService.Gw2Mumble.PlayerCharacter.CurrentMount;
+            var context = GetMountPlaylist(currentMount);
+            bgmLibraryContainer.Show(new BgmLibraryView(context, currentMount.FriendlyName()));
             base.Build(buildPanel);
+        }
+
+        private Playlist GetMountPlaylist(MountType mountType) {
+            return MusicMixer.Instance.Data.GetMountPlaylist(mountType) ?? new Playlist {
+                ExternalId = mountType.ToString(),
+                Enabled    = true,
+                Tracks     = new List<AudioSource>()
+            };
         }
     }
 }
