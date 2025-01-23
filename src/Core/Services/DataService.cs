@@ -33,16 +33,17 @@ namespace Nekres.Music_Mixer.Core.Services {
         private const string TBL_THUMBNAIL_CHUNKS = "thumbnail_chunks";
         private const string LITEDB_FILENAME      = "music.db";
 
-        private readonly ConcurrentBag<string> _unavailableSources;
+        private readonly ConcurrentBag<string>                        _unavailableSources;
+        private readonly ConcurrentDictionary<string, AsyncTexture2D> _thumbnailsLoading;
 
         public event EventHandler<ValueEventArgs<AudioSource>> SourceRemoved;
 
         public DataService() {
+            _thumbnailsLoading  = new ConcurrentDictionary<string, AsyncTexture2D>();
             _unavailableSources = new ConcurrentBag<string>();
             _connectionString = new ConnectionString {
                 Filename   = Path.Combine(MusicMixer.Instance.ModuleDirectory, LITEDB_FILENAME),
-                Connection = ConnectionType.Shared,
-                Upgrade = true
+                Connection = ConnectionType.Shared
             };
             BsonMapper.Global.RegisterType(
                 serialize: code => code.ToString(),
@@ -124,54 +125,79 @@ namespace Nekres.Music_Mixer.Core.Services {
         }
 
         public AsyncTexture2D GetThumbnail(AudioSource source) {
-            LiteFileStream<string> stream = null;
-
             var texture = new AsyncTexture2D();
-
             if (string.IsNullOrWhiteSpace(source.ExternalId)) {
                 return texture;
             }
-
-            this.AcquireWriteLock();
+            LiteFileStream<string> stream = null;
             try {
                 using var db = new LiteDatabase(_connectionString);
-
                 var thumbnails = db.GetStorage<string>(TBL_THUMBNAILS, TBL_THUMBNAIL_CHUNKS);
-
                 if (thumbnails.Exists(source.ExternalId)) {
                     stream = thumbnails.OpenRead(source.ExternalId);
+                    using var gdx = GameService.Graphics.LendGraphicsDeviceContext();
+                    texture.SwapTexture(Texture2D.FromStream(gdx.GraphicsDevice, stream));
+                } else if (!string.IsNullOrWhiteSpace(source.PageUrl)) {
+                    // Thumbnail not cached, request it.
+                    if (_thumbnailsLoading.TryGetValue(source.ExternalId, out var tex)) {
+                        return tex; // Already requesting.
+                    } else if (_thumbnailsLoading.TryAdd(source.ExternalId, texture)) {
+                        MusicMixer.Instance.YtDlp.GetThumbnail(source.PageUrl, thumbnailUri => ThumbnailUrlReceived(source.ExternalId, thumbnailUri, texture));
+                    }
                 }
-
             } catch (Exception e) {
-
+                // Unsupported image format or LiteDB error.
                 MusicMixer.Logger.Warn(e, e.Message);
-
             } finally {
-                this.ReleaseWriteLock();
+                stream?.Dispose();
             }
 
-            if (stream == null) {
-
-                if (string.IsNullOrWhiteSpace(source.PageUrl)) {
-                    return texture;
-                }
-
-                // Thumbnail not cached, request it.
-                MusicMixer.Instance.YtDlp.GetThumbnail(source.PageUrl, thumbnailUri => ThumbnailUrlReceived(source.ExternalId, thumbnailUri, texture));
-                return texture;
-            }
-
-            try {
-                using var gdx = GameService.Graphics.LendGraphicsDeviceContext();
-                texture.SwapTexture(Texture2D.FromStream(gdx.GraphicsDevice, stream));
-                return texture;
-            } catch (Exception e) {
-                // Unsupported image format.
-                MusicMixer.Logger.Info(e,e.Message);
-            }
-
-            stream.Dispose();
             return texture;
+        }
+
+        private void ThumbnailUrlReceived(string id, string url, AsyncTexture2D texture) {
+            if (string.IsNullOrEmpty(url)) {
+                _thumbnailsLoading.TryRemove(id, out _);
+                return;
+            }
+            var client = new WebClient();
+            client.OpenReadAsync(new Uri(url));
+            client.OpenReadCompleted += (_, e) => {
+                using var stream = e.Result;
+                try {
+                    if (e.Cancelled) {
+                        return;
+                    }
+                    if (e.Error != null) {
+                        throw e.Error;
+                    }
+                    if (stream == null) {
+                        return;
+                    }
+                    using var image = Image.Load(stream);
+                    using var ms    = new MemoryStream();
+                    image.Save(ms, JpegFormat.Instance);
+                    ms.Position = 0;
+                    // Cache the thumbnail
+                    this.AcquireWriteLock();
+                    try {
+                        using var db         = new LiteDatabase(_connectionString);
+                        var       thumbnails = db.GetStorage<string>(TBL_THUMBNAILS, TBL_THUMBNAIL_CHUNKS);
+                        thumbnails.Upload(id, url, ms);
+                    } finally {
+                        this.ReleaseWriteLock();
+                    }
+                    // Swap texture with the thumbnail
+                    using var gdx = GameService.Graphics.LendGraphicsDeviceContext();
+                    texture.SwapTexture(Texture2D.FromStream(gdx.GraphicsDevice, ms));
+                } catch (Exception ex) {
+                    // WebException or ImageFormatException or ArgumentException or InvalidOperationException
+                    MusicMixer.Logger.Info(ex, ex.Message);
+                } finally {
+                    _thumbnailsLoading.TryRemove(id, out var _);
+                    client.Dispose();
+                }
+            };
         }
 
         public bool GetTrackByMediaId(string mediaId, out AudioSource source) {
@@ -272,7 +298,6 @@ namespace Nekres.Music_Mixer.Core.Services {
 
             try {
                 using var db = new LiteDatabase(_connectionString);
-
                 var collection = db.GetCollection<AudioSource>(TBL_AUDIO_SOURCES);
                 collection.Upsert(model); // Returns true on insertion and false on update.
                 return true;
@@ -313,70 +338,13 @@ namespace Nekres.Music_Mixer.Core.Services {
             if (_lockAcquired) {
                 _lockReleased.WaitOne(500);
             }
-            
             _lockReleased.Dispose();
-
             // Dispose the lock
             try {
                 _rwLock.Dispose();
             } catch (Exception ex) {
                 MusicMixer.Logger.Debug(ex, ex.Message);
             }
-        }
-
-        private void ThumbnailUrlReceived(string id, string url, AsyncTexture2D texture) {
-            if (string.IsNullOrEmpty(url)) {
-                return;
-            }
-
-            var client = new WebClient();
-            client.OpenReadAsync(new Uri(url));
-
-            client.OpenReadCompleted += (_, e) => {
-
-                using var stream = e.Result;
-
-                try {
-                    if (e.Cancelled) {
-                        return;
-                    }
-
-                    if (e.Error != null) {
-                        throw e.Error;
-                    }
-
-                    if (stream == null) {
-                        return;
-                    }
-
-                    using var image = Image.Load(stream);
-                    using var ms    = new MemoryStream();
-                    image.Save(ms, JpegFormat.Instance);
-                    ms.Position = 0;
-
-                    // Cache the thumbnail
-                    this.AcquireWriteLock();
-
-                    try {
-                        using var db = new LiteDatabase(_connectionString);
-
-                        var thumbnails = db.GetStorage<string>(TBL_THUMBNAILS, TBL_THUMBNAIL_CHUNKS);
-                        thumbnails.Upload(id, url, ms);
-                    } finally {
-                        this.ReleaseWriteLock();
-                    }
-
-                    // Swap texture with the thumbnail
-                    using var gdx = GameService.Graphics.LendGraphicsDeviceContext();
-                    texture.SwapTexture(Texture2D.FromStream(gdx.GraphicsDevice, ms));
-
-                } catch (Exception ex) {
-                    // WebException or ImageFormatException or ArgumentException or InvalidOperationException
-                    MusicMixer.Logger.Info(ex, ex.Message);
-                } finally {
-                    client.Dispose();
-                }
-            };
         }
 
         private void AcquireWriteLock() {
