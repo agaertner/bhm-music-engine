@@ -103,7 +103,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 return new AudioTrack(source);
             } catch (Exception e) {
                 if (retries > 0) {
-                    logger.Info(e, $"Failed to create audio output stream. Remaining retries: {retries}.");
+                    logger.Info($"Failed to create audio output stream. Remaining retries: {retries}.");
                     await Task.Delay(delayMs);
                     return await TryGetStream(source, retries - 1, delayMs, logger);
                 }
