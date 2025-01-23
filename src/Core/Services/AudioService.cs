@@ -13,8 +13,8 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
 
         public AudioTrack AudioTrack { get; private set; }
 
-        private int _processing;
-        public bool Loading => 0 == Interlocked.Exchange(ref _processing, 1);
+        private readonly SemaphoreSlim _processingLock;
+        public bool Loading => _processingLock is {CurrentCount: 0};
 
         private AudioSource _previousSource;
         private TimeSpan    _interuptedAt;
@@ -25,8 +25,9 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         public AudioService() {
             AudioTrack = AudioTrack.Empty;
 
-            _scheduler   = TaskScheduler.FromCurrentSynchronizationContext();
-            _trackLoader = Task.CompletedTask;
+            _processingLock = new SemaphoreSlim(1, 1);
+            _scheduler      = TaskScheduler.FromCurrentSynchronizationContext();
+            _trackLoader    = Task.CompletedTask;
 
             MusicMixer.Instance.Gw2State.IsSubmergedChanged          += OnIsSubmergedChanged;
             MusicMixer.Instance.Gw2State.StateChanged                += OnStateChanged;
@@ -46,43 +47,43 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         public async Task Play(AudioSource source) {
-            if (this.Loading || source == null || source.IsEmpty || MusicMixer.Instance == null) {
+            if (!await _processingLock.WaitAsync(0)) {
                 return;
             }
-
-            if (string.IsNullOrEmpty(source.PageUrl)) {
-                Interlocked.Exchange(ref _processing, 0);
-                return;
-            }
-
-            YtDlpService.ErrorCode error = 0;
-            if (string.IsNullOrEmpty(source.AudioUrl)) { // Direct audio url will be empty on first load every session.
-                error = await MusicMixer.Instance.YtDlp.GetAudioOnlyUrl(source);
-                if (error != YtDlpService.ErrorCode.Ratelimited) {
-                    source.LastError = error;
-                    MusicMixer.Instance.Data.Upsert(source);
-                }
-            }
-
-            if (error > 0) {
-                if (error == YtDlpService.ErrorCode.Unknown) {
-                    Interlocked.Exchange(ref _processing, 0);
+            try {
+                if (source == null || source.IsEmpty || MusicMixer.Instance == null) {
                     return;
                 }
-                ErrorPrompt.Show(source.GetErrorMessage() + "\n\n" + Resources.Would_you_like_to_remove_this_track_from_all_playlists_, ErrorPrompt.DialogIcon.Exclamation, ErrorPrompt.DialogButtons.Yes | ErrorPrompt.DialogButtons.No,
-                                 async bttn => {
-                                     if (bttn == ErrorPrompt.DialogButtons.Yes) {
-                                         MusicMixer.Instance.Data.Remove(source);
-                                     } else {
-                                         MusicMixer.Instance.Data.AddSourceToSkips(source.ExternalId); // Skip this session.
-                                     }
-                                     Interlocked.Exchange(ref _processing, 0);
-                                 });
-                return;
-            }
+                if (string.IsNullOrEmpty(source.PageUrl)) {
+                    return;
+                }
+                YtDlpService.ErrorCode error = 0;
+                if (string.IsNullOrEmpty(source.AudioUrl)) {
+                    // Direct audio url will be empty on first load every session.
+                    error = await MusicMixer.Instance.YtDlp.GetAudioOnlyUrl(source);
 
-            await TryPlay(source);
-            Interlocked.Exchange(ref _processing, 0);
+                    if (error != YtDlpService.ErrorCode.Ratelimited) {
+                        source.LastError = error;
+                        MusicMixer.Instance.Data.Upsert(source);
+                    }
+                }
+                if (error > 0) {
+                    if (error == YtDlpService.ErrorCode.Unknown) {
+                        return;
+                    }
+                    MusicMixer.Instance.Data.AddSourceToSkips(source.ExternalId); // Skip this session.
+                    ErrorPrompt.Show(source.GetErrorMessage() + "\n\n" + Resources.Would_you_like_to_remove_this_track_from_all_playlists_, ErrorPrompt.DialogIcon.Exclamation, ErrorPrompt.DialogButtons.Yes | ErrorPrompt.DialogButtons.No,
+                                     bttn => {
+                                         if (bttn == ErrorPrompt.DialogButtons.Yes) {
+                                             MusicMixer.Instance.Data.Remove(source);
+                                         }
+                                     });
+                    return;
+                }
+                await TryPlay(source);
+            } finally {
+                _processingLock.Release();
+            }
         }
 
         private async Task TryPlay(AudioSource source) {
@@ -170,6 +171,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             GameService.GameIntegration.Gw2Instance.Gw2AcquiredFocus -= OnGw2AcquiredFocus;
             this.AudioTrack?.Dispose();
             _trackLoader?.Dispose();
+            _processingLock?.Dispose();
             SetGameVolume(1);
         }
 
