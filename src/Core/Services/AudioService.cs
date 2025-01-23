@@ -87,9 +87,6 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         private async Task TryPlay(AudioSource source) {
-            if (source.State != MusicMixer.Instance.Gw2State.CurrentState) {
-                return;
-            }
             MusicMixer.Logger.Info("Playing: \"" + source.Title + "\" | " + source.PageUrl + " | Vol: " + Math.Round(source.Volume, 3) + " | " + source.State);
             // Making sure WasApiOut is initialized in main synchronization context. Otherwise it will fail.
             // https://github.com/naudio/NAudio/issues/425
@@ -187,15 +184,21 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         private void OnStateChanged(object o, ValueChangedEventArgs<Gw2StateService.State> e) {
-            if (MusicMixer.Instance.ModuleConfig.Value.PlayToCompletion && !this.AudioTrack.IsEmpty) {
-                if (e.NewValue != Gw2StateService.State.Defeated) {
-                    return; // Continue playing when changing states (except when defeated).
+            if (!this.AudioTrack.IsEmpty) {
+                if (e.NewValue == Gw2StateService.State.None) {
+                    Reset(); // Always reset if not in-game.
+                    return;
                 }
-                if (this.AudioTrack.Source.State == e.NewValue) {
-                    return; // Continue playing when states match and play to completion is set.
+                if (MusicMixer.Instance.ModuleConfig.Value.PlayToCompletion) {
+                    if (e.NewValue != Gw2StateService.State.Defeated) {
+                        return; // Continue playing when changing states (except when defeated).
+                    }
+                    if (this.AudioTrack.Source.State == e.NewValue) {
+                        return; // Continue playing when states match and play to completion is set.
+                    }
                 }
+                Reset();
             }
-            Reset();
         }
 
         public async Task NextSong(Gw2StateService.State state) {

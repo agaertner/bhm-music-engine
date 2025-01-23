@@ -295,6 +295,8 @@ n&apos;est pas disponible (Raison : {1})</value>
   </data>
   <data name="Copy Playlists" xml:space="preserve">
     <value>Wiedergabelisten kopieren</value>
-    <comment>Fuzzy</comment>
+  </data>
+  <data name="Play {0} by {1}" xml:space="preserve">
+    <value>Lire {0} par {1}</value>
   </data>
 </root>

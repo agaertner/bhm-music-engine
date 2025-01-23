@@ -246,7 +246,7 @@ namespace Nekres.Music_Mixer.Core.Services {
                     RedirectStandardError  = true,
                     UseShellExecute        = false,
                     FileName               = _executablePath,
-                    Arguments              = $"--print id,webpage_url,title,uploader,duration {link} {_globalYtDlpArgs}" // Url is supported if we get any results.
+                    Arguments              = $"--print id,webpage_url,title,uploader,channel,duration {link} {_globalYtDlpArgs}" // Url is supported if we get any results.
                 }
             };
 
@@ -281,6 +281,9 @@ namespace Nekres.Music_Mixer.Core.Services {
                         uploader = e.Data;
                         break;
                     case 4:
+                        uploader = string.IsNullOrWhiteSpace(uploader) ? e.Data : uploader; // Use channel name if uploader empty.
+                        break;
+                    case 5:
                         duration = int.TryParse(Regex.Replace(e.Data, "[^0-9]", string.Empty), out var dur) ? 
                                                 TimeSpan.FromSeconds(dur) : TimeSpan.Zero;
                         break;

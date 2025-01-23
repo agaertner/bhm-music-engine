@@ -295,4 +295,7 @@ is not available (Reason: {1})</value>
   <data name="Copy Playlists" xml:space="preserve">
     <value>Copy Playlists</value>
   </data>
+  <data name="Play {0} by {1}" xml:space="preserve">
+    <value>Play {0} by {1}</value>
+  </data>
 </root>
