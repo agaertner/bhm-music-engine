@@ -1,4 +1,5 @@
 ﻿using Blish_HUD;
+using Blish_HUD.Content;
 using Blish_HUD.Controls;
 using Blish_HUD.Graphics.UI;
 using Blish_HUD.Input;
@@ -15,11 +16,11 @@ using System.Threading.Tasks;
 namespace Nekres.Music_Mixer.Core.UI.Library {
     public class BgmLibraryView : View {
 
-        private Playlist      _playlist;
-        private KeyBinding    _pasteShortcut;
-        private FlowPanel     _tracksPanel;
-        private string        _name;
-        private bool          _checkingLink;
+        private Playlist   _playlist;
+        private KeyBinding _pasteShortcut;
+        private FlowPanel  _tracksPanel;
+        private string     _name;
+        private bool       _checkingLink;
 
         public BgmLibraryView(Playlist playlist, string playlistName) {
             _name = playlistName;
@@ -27,7 +28,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
             _pasteShortcut = new KeyBinding(ModifierKeys.Ctrl, Keys.V) {
                 Enabled = true
             };
-            _pasteShortcut.Activated += OnPastePressed;
+            _pasteShortcut.Activated               += OnPastePressed;
             MusicMixer.Instance.Data.SourceRemoved += OnSourceRemoved;
         }
 
@@ -202,8 +203,6 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
             }
 
             addBttn.Click += async (_, _) => await FindAdd();
-
-            base.Build(buildPanel);
         }
 
         private void AddBgmEntry(AudioSource source, FlowPanel parent) {
@@ -240,24 +239,32 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
 
             public readonly AudioSource AudioSource;
 
+            private static AsyncTexture2D _errorTex;
+            private static AsyncTexture2D _delBttnTex;
+            private static AsyncTexture2D _delBttnHoverTex;
+
             public BgmEntry(AudioSource audioSource) {
                 AudioSource = audioSource;
+
+                _errorTex        ??= GameService.Content.DatAssetCache.GetTextureFromAssetId(154982);
+                _delBttnTex      ??= GameService.Content.DatAssetCache.GetTextureFromAssetId(156012);
+                _delBttnHoverTex ??= GameService.Content.DatAssetCache.GetTextureFromAssetId(156011);
             }
 
             protected override void Build(Container buildPanel) {
 
-                /*var slidePanel = new SlidePanel {
+                var slidePanel = new SlidePanel {
                     Parent = buildPanel,
-                    Width = buildPanel.ContentRegion.Width,
+                    Width  = buildPanel.ContentRegion.Width,
                     Height = buildPanel.ContentRegion.Height,
-                    Left = buildPanel.ContentRegion.Width
-                };*/
+                    Left   = buildPanel.ContentRegion.Width
+                };
 
                 var thumbnail = new RoundedImage {
-                    Parent  = buildPanel,
-                    Width   = 192, // 16:9
-                    Height  = 108,
-                    Texture = AudioSource.Thumbnail,
+                    Parent           = slidePanel,
+                    Width            = 192, // 16:9
+                    Height           = 108,
+                    Texture          = AudioSource.Thumbnail,
                     BasicTooltipText = string.Format(Resources.Play__0__by__1_, AudioSource.Title, AudioSource.Uploader)
                 };
 
@@ -277,11 +284,11 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
 
                 if (AudioSource.HasError) {
                     var image = new Image {
-                        Parent           = buildPanel,
+                        Parent           = slidePanel,
                         Left             = thumbnail.Width - 32,
                         Width            = 32,
                         Height           = 32,
-                        Texture          = GameService.Content.DatAssetCache.GetTextureFromAssetId(154982),
+                        Texture          = _errorTex,
                         BasicTooltipText = AudioSource.GetErrorMessage(),
                         BackgroundColor  = Color.Black * 0.7f
                     };
@@ -294,44 +301,44 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                                                           .CreatePart(durationStr, o => {
                                                               o.SetFontSize(ContentService.FontSize.Size14);
                                                           }).Build();
-                duration.Parent          = buildPanel;
+                duration.Parent          = slidePanel;
                 duration.Bottom          = thumbnail.Bottom;
                 duration.Right           = thumbnail.Right;
                 duration.BackgroundColor = Color.Black * 0.25f;
 
                 var delBttn = new Image {
-                    Parent           = buildPanel,
+                    Parent           = slidePanel,
                     Width            = 32,
                     Height           = 32,
-                    Right            = buildPanel.ContentRegion.Width - Panel.RIGHT_PADDING - 13 /*SCROLLBAR_WIDTH*/,
+                    Right            = slidePanel.ContentRegion.Width - Panel.RIGHT_PADDING - 13 /*SCROLLBAR_WIDTH*/,
                     Top              = thumbnail.Top,
-                    Texture          = GameService.Content.DatAssetCache.GetTextureFromAssetId(156012),
+                    Texture          = _delBttnTex,
                     BasicTooltipText = Resources.Remove_from_Playlist
                 };
 
                 delBttn.MouseEntered += (_, _) => {
-                    delBttn.Texture = GameService.Content.DatAssetCache.GetTextureFromAssetId(156011);
+                    delBttn.Texture = _delBttnHoverTex;
                 };
 
                 delBttn.MouseLeft += (_, _) => {
-                    delBttn.Texture = GameService.Content.DatAssetCache.GetTextureFromAssetId(156012);
+                    delBttn.Texture = _delBttnTex;
                 };
 
                 delBttn.Click += (_, _) => {
                     GameService.Content.PlaySoundEffectByName("button-click");
-
-                    delBttn.Texture = GameService.Content.DatAssetCache.GetTextureFromAssetId(156012);
-
-                    //slidePanel.SlideOut(buildPanel.Dispose);
-
+                    delBttn.Texture = _delBttnTex;
+                    slidePanel.SlideOut(buildPanel.Dispose);
                     GameService.Content.PlaySoundEffectByName("window-close");
-
                     OnDeleted?.Invoke(this, EventArgs.Empty);
                 };
 
-                var title = new FormattedLabelBuilder().SetWidth(buildPanel.ContentRegion.Width -
-                                                                 thumbnail.Right - delBttn.Width -
-                                                                 Panel.RIGHT_PADDING - 13 - Control.ControlStandard.ControlOffset.X * 3)
+                var title = new FormattedLabelBuilder().SetWidth(
+                                                                 slidePanel.ContentRegion.Width
+                                                               - thumbnail.Right                
+                                                               - delBttn.Width
+                                                               - Panel.RIGHT_PADDING
+                                                               - 13            
+                                                               - Control.ControlStandard.ControlOffset.X * 3)
                                                        .SetHeight(thumbnail.Height)
                                                        .SetVerticalAlignment(VerticalAlignment.Top)
                                                        .CreatePart(AudioSource.Title, o => {
@@ -348,15 +355,15 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                                                            }}).Wrap().CreatePart($"\n{AudioSource.Uploader}", o => { 
                                                             o.SetFontSize(ContentService.FontSize.Size16);
                                                        }).Build();
-                title.Parent = buildPanel;
+                title.Parent = slidePanel;
                 title.Top    = thumbnail.Top;
                 title.Left   = thumbnail.Right + Control.ControlStandard.ControlOffset.X;
 
                 var cyclesPanel = new FlowPanel {
-                    Parent              = buildPanel,
+                    Parent              = slidePanel,
                     Width               = 140,
                     Height              = 32,
-                    Right               = buildPanel.ContentRegion.Width - Panel.RIGHT_PADDING,
+                    Right               = slidePanel.ContentRegion.Width - Panel.RIGHT_PADDING,
                     Bottom              = thumbnail.Bottom,
                     FlowDirection       = ControlFlowDirection.SingleLeftToRight,
                     ControlPadding      = new Vector2(Control.ControlStandard.ControlOffset.X, 0),
@@ -396,14 +403,10 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                             GameService.Content.PlaySoundEffectByName("error");
                             return;
                         }
-
                         GameService.Content.PlaySoundEffectByName("color-change");
                     };
                 }
-
-                //slidePanel.SlideIn();
-
-                base.Build(buildPanel);
+                slidePanel.SlideIn();
             }
         }
     }
