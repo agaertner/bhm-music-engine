@@ -191,7 +191,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 SetVolume(0);
                 return;
             }
-            SetVolume(AudioUtil.GetNormalizedVolume(Source.Volume * 2, MusicMixer.Instance.MasterVolume));
+            SetVolume(AudioUtil.GetNormalizedVolume(Source.Volume, MusicMixer.Instance.ModuleConfig.Value.MasterVolume));
         }
 
         private void SetVolume(float volume) {

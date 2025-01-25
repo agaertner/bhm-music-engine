@@ -8,7 +8,8 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
         public static ModuleConfig Default = new() {
             _outputDevice          = string.Empty,
             _useCustomOutputDevice = false,
-            _masterVolume          = 0.5f,
+            _masterVolume          = 0.25f,
+            _gameVolume            = 0.3f,
             _averageBitrate        = YtDlpService.AudioBitrate.B320,
             _muteWhenInBackground  = true,
             _defaultUpdates        = true,
@@ -78,6 +79,17 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
             get => _masterVolume;
             set {
                 if (SetProperty(ref _masterVolume, value)) {
+                    this.SaveConfig(MusicMixer.Instance.ModuleConfig);
+                }
+            }
+        }
+
+        private float _gameVolume = 0.1f;
+        [JsonProperty("game_volume")]
+        public float GameVolume {
+            get => _gameVolume;
+            set {
+                if (SetProperty(ref _gameVolume, value)) {
                     this.SaveConfig(MusicMixer.Instance.ModuleConfig);
                 }
             }

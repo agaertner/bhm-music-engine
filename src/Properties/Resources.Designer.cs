@@ -206,6 +206,24 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Game Volume.
+        /// </summary>
+        internal static string Game_Volume {
+            get {
+                return ResourceManager.GetString("Game Volume", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Game Volume during Playback.
+        /// </summary>
+        internal static string Game_Volume_during_Playback {
+            get {
+                return ResourceManager.GetString("Game Volume during Playback", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Geo-Blocked.
         /// </summary>
         internal static string Geo_Blocked {

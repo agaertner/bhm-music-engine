@@ -60,9 +60,6 @@ namespace Nekres.Music_Mixer {
         private Texture2D _mountTabIcon;
         private Texture2D _defeatedIcon;
 
-        private  float _prevMasterVol;
-        internal float MasterVolume => ModuleConfig.Value == null ? _prevMasterVol : _prevMasterVol = ModuleConfig.Value.MasterVolume;
-
         private const string DEFAULT_MUSIC_CHECK_URL = "https://api.github.com/repos/agaertner/bhm-music-engine/commits?path=default_music.json&page=1&per_page=1";
         private const string DEFAULT_MUSIC_URL       = "https://github.com/agaertner/bhm-music-engine/raw/main/default_music.json";
 
@@ -171,7 +168,7 @@ namespace Nekres.Music_Mixer {
             YtDlp.RemoveCache();    // ..from cache.
             Data.RemoveAudioUrls(); // ..from database.
 
-            ModuleConfig.Value.MasterVolume = MathHelper.Clamp(ModuleConfig.Value.MasterVolume, 0f, 2f);
+            ModuleConfig.Value.MasterVolume = MathHelper.Clamp(ModuleConfig.Value.MasterVolume, 0f, 1f);
 
             
             var windowRegion = new Rectangle(40, 26, 913, 691);

@@ -299,4 +299,10 @@ n&apos;est pas disponible (Raison : {1})</value>
   <data name="Play {0} by {1}" xml:space="preserve">
     <value>Lire {0} par {1}</value>
   </data>
+  <data name="Game Volume" xml:space="preserve">
+    <value>Volume de jeu</value>
+  </data>
+  <data name="Game Volume during Playback" xml:space="preserve">
+    <value>Volume du jeu pendant la lecture</value>
+  </data>
 </root>
