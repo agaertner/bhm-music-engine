@@ -98,7 +98,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 bool isPlaying = await track.Play();
                 if (isPlaying) {
                     this.Reset();
-                    SetGameVolume(0.1f);
+                    SetGameVolume(MusicMixer.Instance.ModuleConfig.Value.GameVolume);
                     track.Finished  += OnSoundtrackFinished;
                     this.AudioTrack = track;
                     MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(source));
@@ -135,7 +135,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         public void Resume() {
             if (!this.AudioTrack.IsEmpty) {
                 this.AudioTrack.Resume();
-                SetGameVolume(0.1f);
+                SetGameVolume(MusicMixer.Instance.ModuleConfig.Value.GameVolume);
             }
         }
 

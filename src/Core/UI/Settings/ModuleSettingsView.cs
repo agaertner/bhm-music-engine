@@ -64,12 +64,25 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
                 Width  = flowPanel.ContentRegion.Width,
                 Height = 30,
             };
-            var volumeSetting = new NumericConfigView(_config.MasterVolume * 100, Resources.Master_Volume);
+            var volumeSetting = new NumericConfigView(_config.MasterVolume * 100, Resources.Master_Volume, 0, 100);
             volumeSetting.ValueChanged += (_, e) => {
                 _config.MasterVolume             = e.Value / 100;
-                volumeContainer.BasicTooltipText = $"{_config.MasterVolume}";
+                volumeContainer.BasicTooltipText = $"{_config.MasterVolume * 100}";
             };
             volumeContainer.Show(volumeSetting);
+
+            var gameVolumeContainer = new ViewContainer {
+                Parent = flowPanel,
+                Width  = flowPanel.ContentRegion.Width,
+                Height = 30,
+                BasicTooltipText = Resources.Game_Volume_during_Playback
+            };
+            var gameVolumeSetting = new NumericConfigView(_config.GameVolume * 100, Resources.Game_Volume, 0, 100);
+            gameVolumeSetting.ValueChanged += (_, e) => {
+                _config.GameVolume = e.Value / 100;
+                gameVolumeContainer.BasicTooltipText = $"{_config.GameVolume * 100}";
+            };
+            gameVolumeContainer.Show(gameVolumeSetting);
 
             cbx = new Checkbox {
                 Parent  = flowPanel,
@@ -155,7 +168,7 @@ namespace Nekres.Music_Mixer.Core.UI.Settings {
             private string _displayText;
             private float  _minValue;
             private float  _maxValue;
-            public NumericConfigView(float value, string displayText, float minValue = 0, float maxValue = 200) {
+            public NumericConfigView(float value, string displayText, float minValue, float maxValue) {
                 _value = value;
                 _displayText = displayText;
                 _minValue = minValue;

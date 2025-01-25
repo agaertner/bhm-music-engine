@@ -298,4 +298,10 @@ is not available (Reason: {1})</value>
   <data name="Play {0} by {1}" xml:space="preserve">
     <value>Play {0} by {1}</value>
   </data>
+  <data name="Game Volume" xml:space="preserve">
+    <value>Game Volume</value>
+  </data>
+  <data name="Game Volume during Playback" xml:space="preserve">
+    <value>Game Volume during Playback</value>
+  </data>
 </root>

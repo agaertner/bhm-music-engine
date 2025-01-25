@@ -298,4 +298,10 @@ ist nicht verfügbar (Grund: {1})</value>
   <data name="Play {0} by {1}" xml:space="preserve">
     <value>{0} von {1} abspielen</value>
   </data>
+  <data name="Game Volume" xml:space="preserve">
+    <value>Spiellautstärke</value>
+  </data>
+  <data name="Game Volume during Playback" xml:space="preserve">
+    <value>Spiellautstärke bei Wiedergabe</value>
+  </data>
 </root>

@@ -26,10 +26,10 @@ namespace Nekres.Music_Mixer.Core.Services.Audio.Source {
         }
 
         private float GetDepthAdjustedVolume() {
-            var normalized = AudioUtil.GetNormalizedVolume(this.Volume, MusicMixer.Instance.MasterVolume);
+            var normalized = AudioUtil.GetNormalizedVolume(this.Volume, MusicMixer.Instance.ModuleConfig.Value.MasterVolume);
             if (this.Enabled) {
                 return MathHelper.Clamp(Map(GameService.Gw2Mumble.PlayerCamera.Position.Z,
-                                            -130, AudioUtil.GetNormalizedVolume(0.1f, MusicMixer.Instance.MasterVolume), 0, 
+                                            -130, AudioUtil.GetNormalizedVolume(0.1f, MusicMixer.Instance.ModuleConfig.Value.MasterVolume), 0, 
                                             normalized), 0f, normalized);
             }
             return normalized;
