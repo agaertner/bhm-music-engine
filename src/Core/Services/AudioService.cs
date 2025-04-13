@@ -39,7 +39,17 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             this.AudioTrack.Invalidate();
             if (MusicMixer.Instance.ModuleConfig.Value.Paused) {
                 this.Pause();
-            } else if (AudioTrack.IsEmpty && _trackLoader.IsCompleted) {
+                return;
+            }
+            if (!AudioTrack.IsEmpty) {
+                if (AudioTrack.Source.IsPreview) {
+                    return;
+                }
+                if (AudioTrack.Source.State != MusicMixer.Instance.Gw2State.CurrentState
+                && !MusicMixer.Instance.ModuleConfig.Value.PlayToCompletion) {
+                    this.Reset();
+                }
+            } else if (_trackLoader.IsCompleted) {
                 _trackLoader = Task.Run(async () => {
                     await this.NextSong(MusicMixer.Instance.Gw2State.CurrentState);
                 });
@@ -92,7 +102,8 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             // https://github.com/naudio/NAudio/issues/425
             await Task.Factory.StartNew(async () => {
                 var track = await AudioTrack.TryGetStream(source);
-                if (track.IsEmpty) {
+                if (track.IsEmpty 
+                || (!track.Source.IsPreview && track.Source.State != MusicMixer.Instance.Gw2State.CurrentState)) {
                     return;
                 }
                 bool isPlaying = await track.Play();
@@ -140,7 +151,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         public void SaveContext() {
-            if (!this.AudioTrack.IsEmpty) {
+            if (!this.AudioTrack.IsEmpty && !this.AudioTrack.Source.IsPreview) {
                 _interuptedAt   = this.AudioTrack.CurrentTime;
                 _previousSource = this.AudioTrack.Source;
             }

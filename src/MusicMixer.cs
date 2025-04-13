@@ -92,7 +92,7 @@ namespace Nekres.Music_Mixer {
             };
         }
 
-        protected override async void Update(GameTime gameTime) {
+        protected override void Update(GameTime gameTime) {
             if (gameTime.TotalGameTime.TotalMilliseconds - _lastRun < 10) {
                 return;
             }
