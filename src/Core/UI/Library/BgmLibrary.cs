@@ -113,6 +113,8 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                     }
                 }
 
+                source.IsPreview = true;
+
                 _playlist.Tracks.Add(source);
                 MusicMixer.Instance.Data.Upsert(_playlist);
 
