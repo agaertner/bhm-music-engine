@@ -113,8 +113,6 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                     }
                 }
 
-                source.IsPreview = true;
-
                 _playlist.Tracks.Add(source);
                 MusicMixer.Instance.Data.Upsert(_playlist);
 
@@ -277,7 +275,7 @@ namespace Nekres.Music_Mixer.Core.UI.Library {
                         } else {
                             thumbnail.ShowLoadingSpinner = true;
                             GameService.Content.PlaySoundEffectByName("open-skill-slot");
-                            await MusicMixer.Instance.Audio.Play(AudioSource);
+                            await MusicMixer.Instance.Audio.Play(AudioSource, true);
                             MusicMixer.Instance.ModuleConfig.Value.Paused = false;
                             thumbnail.ShowLoadingSpinner = false;
                         }
