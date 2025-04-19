@@ -5,13 +5,13 @@ using Nekres.Music_Mixer.Properties;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-
 namespace Nekres.Music_Mixer.Core.Services.Audio {
     internal class AudioService : IDisposable
     {
         public event EventHandler<ValueEventArgs<AudioSource>> MusicChanged;
 
         public AudioTrack AudioTrack { get; private set; }
+        public bool IsPreviewPlaying { get; private set; }
 
         private readonly SemaphoreSlim _processingLock;
         public bool Loading => _processingLock is {CurrentCount: 0};
@@ -42,7 +42,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                 return;
             }
             if (!AudioTrack.IsEmpty) {
-                if (AudioTrack.Source.IsPreview) {
+                if (IsPreviewPlaying) {
                     return;
                 }
                 if (AudioTrack.Source.State != MusicMixer.Instance.Gw2State.CurrentState
@@ -56,7 +56,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             }
         }
 
-        public async Task Play(AudioSource source) {
+        public async Task Play(AudioSource source, bool isPreview = false) {
             if (!await _processingLock.WaitAsync(0)) {
                 return;
             }
@@ -90,20 +90,20 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                                      });
                     return;
                 }
-                await TryPlay(source);
+                await TryPlay(source, isPreview);
             } finally {
                 _processingLock.Release();
             }
         }
 
-        private async Task TryPlay(AudioSource source) {
+        private async Task TryPlay(AudioSource source, bool isPreview) {
             MusicMixer.Logger.Info("Playing: \"" + source.Title + "\" | " + source.PageUrl + " | Vol: " + Math.Round(source.Volume, 3) + " | " + source.State);
             // Making sure WasApiOut is initialized in main synchronization context. Otherwise it will fail.
             // https://github.com/naudio/NAudio/issues/425
             await Task.Factory.StartNew(async () => {
                 var track = await AudioTrack.TryGetStream(source);
                 if (track.IsEmpty 
-                || (!track.Source.IsPreview && track.Source.State != MusicMixer.Instance.Gw2State.CurrentState)) {
+                || (!isPreview && track.Source.State != MusicMixer.Instance.Gw2State.CurrentState)) {
                     return;
                 }
                 bool isPlaying = await track.Play();
@@ -112,6 +112,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                     SetGameVolume(MusicMixer.Instance.ModuleConfig.Value.GameVolume);
                     track.Finished  += OnSoundtrackFinished;
                     this.AudioTrack = track;
+                    IsPreviewPlaying = isPreview;
                     MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(source));
                 }
             }, CancellationToken.None, TaskCreationOptions.None, _scheduler).Unwrap();
@@ -122,7 +123,8 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
             var track = this.AudioTrack;
             track.Finished -= OnSoundtrackFinished;
             track.Dispose();
-            this.AudioTrack = AudioTrack.Empty; 
+            this.AudioTrack = AudioTrack.Empty;
+            this.IsPreviewPlaying = false;
             MusicChanged?.Invoke(this, new ValueEventArgs<AudioSource>(AudioSource.Empty));
         }
 
@@ -151,7 +153,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
         }
 
         public void SaveContext() {
-            if (!this.AudioTrack.IsEmpty && !this.AudioTrack.Source.IsPreview) {
+            if (!this.AudioTrack.IsEmpty && !this.IsPreviewPlaying) {
                 _interuptedAt   = this.AudioTrack.CurrentTime;
                 _previousSource = this.AudioTrack.Source;
             }

@@ -67,9 +67,6 @@ namespace Nekres.Music_Mixer.Core.Services.Data {
         public YtDlpService.ErrorCode? LastError { get; set; }
 
         [BsonIgnore]
-        public bool IsPreview { get; set; }
-
-        [BsonIgnore]
         public bool HasError => this.LastError.HasValue && this.LastError > 0;
 
         private AsyncTexture2D _thumbnail;
