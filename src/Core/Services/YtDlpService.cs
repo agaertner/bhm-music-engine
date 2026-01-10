@@ -53,7 +53,7 @@ namespace Nekres.Music_Mixer.Core.Services {
         private Logger _logger = Logger.GetLogger(typeof(YtDlpService));
 
         // Do not player_skip=webpage as relying solely on API often responds with "Sign in to confirm you are not a bot".
-        private const string _globalYtDlpArgs = "--ignore-config --no-warnings --no-get-comments --extractor-retries 0 "
+        private const string _globalYtDlpArgs = "--ignore-config --no-warnings --no-playlist --no-get-comments --extractor-retries 0 "
                                               + "--extractor-args \"youtube:max_comments=0\""; // player_client=default
 
         public YtDlpService() {
