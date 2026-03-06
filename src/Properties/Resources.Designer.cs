@@ -19,7 +19,7 @@ namespace Nekres.Music_Mixer.Properties {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -251,6 +251,15 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to is unavailable..
+        /// </summary>
+        internal static string is_unavailable_ {
+            get {
+                return ResourceManager.GetString("is unavailable.", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Jackal.
         /// </summary>
         internal static string Jackal {
@@ -283,6 +292,15 @@ namespace Nekres.Music_Mixer.Properties {
         internal static string Mounted {
             get {
                 return ResourceManager.GetString("Mounted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Music Unavailable.
+        /// </summary>
+        internal static string Music_Unavailable {
+            get {
+                return ResourceManager.GetString("Music Unavailable", resourceCulture);
             }
         }
         
@@ -395,6 +413,15 @@ namespace Nekres.Music_Mixer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Playback Error.
+        /// </summary>
+        internal static string Playback_Error {
+            get {
+                return ResourceManager.GetString("Playback Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Playlists.
         /// </summary>
         internal static string Playlists {
@@ -427,6 +454,15 @@ namespace Nekres.Music_Mixer.Properties {
         internal static string Raptor {
             get {
                 return ResourceManager.GetString("Raptor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reason.
+        /// </summary>
+        internal static string Reason {
+            get {
+                return ResourceManager.GetString("Reason", resourceCulture);
             }
         }
         

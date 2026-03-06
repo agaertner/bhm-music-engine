@@ -267,10 +267,6 @@
   <data name="Will finish the current song even if dismounted." xml:space="preserve">
     <value>Spielt den aktuellen Song zuende, auch wenn Ihr absattelt.</value>
   </data>
-  <data name="&quot;{0}&quot;\nis not available (Reason: {1})" xml:space="preserve">
-    <value>&quot;{0}&quot;
-ist nicht verfügbar (Grund: {1})</value>
-  </data>
   <data name="Deleted" xml:space="preserve">
     <value>Gelöscht</value>
   </data>
@@ -303,5 +299,21 @@ ist nicht verfügbar (Grund: {1})</value>
   </data>
   <data name="Game Volume during Playback" xml:space="preserve">
     <value>Spiellautstärke bei Wiedergabe</value>
+  </data>
+  <data name="Music Unavailable" xml:space="preserve">
+    <value>Musiktitel nicht verfügbar</value>
+  </data>
+  <data name="Playback Error" xml:space="preserve">
+    <value>Wiedergabefehler</value>
+  </data>
+  <data name="&quot;{0}&quot;\nis not available (Reason: {1})" xml:space="preserve">
+    <value>"{0}"
+ist nicht verfügbar (Grund: {1})</value>
+  </data>
+  <data name="is unavailable." xml:space="preserve">
+    <value>ist nicht verfügbar.</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Grund</value>
   </data>
 </root>
