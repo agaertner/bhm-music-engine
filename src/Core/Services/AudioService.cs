@@ -89,7 +89,7 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                         .CreatePart(Environment.NewLine, null)
                         .CreatePart(Environment.NewLine, null)
                         .CreatePart("\"", o => o.SetFontSize(ContentService.FontSize.Size16))
-                        .CreatePart(source.Title, o => o.SetFontSize(ContentService.FontSize.Size16).SetHyperLink(source.PageUrl))
+                        .CreatePart(source.Title, o => o.SetFontSize(ContentService.FontSize.Size16).SetTextColor(Color.SkyBlue).SetHyperLink(source.PageUrl))
                         .CreatePart("\"", o => o.SetFontSize(ContentService.FontSize.Size16))
                         .CreatePart($" {Resources.is_unavailable_}", o => o.SetFontSize(ContentService.FontSize.Size16))
                         .CreatePart($" {Resources.Reason}: " + source.GetErrorReason(), o => o.SetFontSize(ContentService.FontSize.Size16))
