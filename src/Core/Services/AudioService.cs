@@ -1,5 +1,7 @@
 ﻿using Blish_HUD;
+using Blish_HUD.Controls;
 using Blish_HUD.Extended;
+using Microsoft.Xna.Framework;
 using Nekres.Music_Mixer.Core.Services.Data;
 using Nekres.Music_Mixer.Properties;
 using System;
@@ -82,12 +84,25 @@ namespace Nekres.Music_Mixer.Core.Services.Audio {
                         return;
                     }
                     MusicMixer.Instance.Data.AddSourceToSkips(source.ExternalId); // Skip this session.
-                    ErrorPrompt.Show(source.GetErrorMessage() + "\n\n" + Resources.Would_you_like_to_remove_this_track_from_all_playlists_, ErrorPrompt.DialogIcon.Exclamation, ErrorPrompt.DialogButtons.Yes | ErrorPrompt.DialogButtons.No,
-                                     bttn => {
-                                         if (bttn == ErrorPrompt.DialogButtons.Yes) {
-                                             MusicMixer.Instance.Data.Remove(source);
-                                         }
-                                     });
+
+                    var errLbl = new FormattedLabelBuilder().CreatePart(Resources.Music_Unavailable, o => o.SetFontSize(ContentService.FontSize.Size18).SetTextColor(new Color(249, 233, 184)))
+                        .CreatePart(Environment.NewLine, null)
+                        .CreatePart(Environment.NewLine, null)
+                        .CreatePart("\"", o => o.SetFontSize(ContentService.FontSize.Size16))
+                        .CreatePart(source.Title, o => o.SetFontSize(ContentService.FontSize.Size16).SetTextColor(Color.SkyBlue).SetHyperLink(source.PageUrl))
+                        .CreatePart("\"", o => o.SetFontSize(ContentService.FontSize.Size16))
+                        .CreatePart($" {Resources.is_unavailable_}", o => o.SetFontSize(ContentService.FontSize.Size16))
+                        .CreatePart($" {Resources.Reason}: " + source.GetErrorReason(), o => o.SetFontSize(ContentService.FontSize.Size16))
+                        .CreatePart(Environment.NewLine, null)
+                        .CreatePart(Environment.NewLine, null)
+                        .CreatePart(Resources.Would_you_like_to_remove_this_track_from_all_playlists_, o => o.SetFontSize(ContentService.FontSize.Size16).MakeBold())
+                        .CreatePart(Environment.NewLine, null);
+
+                    StandardDialog.Show(errLbl,
+                        source.Thumbnail, 
+                        StandardDialog.DialogButton.Yes.Action(() => MusicMixer.Instance.Data.Remove(source)),
+                        StandardDialog.DialogButton.No);
+
                     return;
                 }
                 await TryPlay(source, isPreview);

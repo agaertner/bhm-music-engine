@@ -157,7 +157,7 @@
     <value>Cette piste est déjà dans la liste de lecture.</value>
   </data>
   <data name="Something went wrong. Please try again." xml:space="preserve">
-    <value>Quelque chose ne s&apos;est pas passé correctement. Veuillez réessayer.</value>
+    <value>Quelque chose ne s'est pas passé correctement. Veuillez réessayer.</value>
   </data>
   <data name="Enable or disable this playlist." xml:space="preserve">
     <value>Activer ou désactiver cette piste de lecture.</value>
@@ -167,7 +167,7 @@
     <comment>Activé(e) if multi usage</comment>
   </data>
   <data name="Paste a video or audio link from your clipboard to add it to the playlist." xml:space="preserve">
-    <value>Copiez un lien de vidéo ou de musique de votre presse-papier pour l&apos;ajouter à votre liste de lecture.</value>
+    <value>Copiez un lien de vidéo ou de musique de votre presse-papier pour l'ajouter à votre liste de lecture.</value>
   </data>
   <data name="Recommended platforms:" xml:space="preserve">
     <value>Plateformes recommandées :</value>
@@ -194,7 +194,7 @@
     <value>Vérification du lien…</value>
   </data>
   <data name="New database created." xml:space="preserve">
-    <value>Création d&apos;une nouvelle base de données.</value>
+    <value>Création d'une nouvelle base de données.</value>
   </data>
   <data name="Importing default playlists." xml:space="preserve">
     <value>Importation de listes de lecture par défaut.</value>
@@ -257,7 +257,7 @@
     <value>{0} est prêt.</value>
   </data>
   <data name="Play to completion." xml:space="preserve">
-    <value>Jouer jusqu&apos;au bout.</value>
+    <value>Jouer jusqu'au bout.</value>
   </data>
   <data name="Next" xml:space="preserve">
     <value>Suivant</value>
@@ -266,11 +266,7 @@
     <value>Précédent</value>
   </data>
   <data name="Will finish the current song even if dismounted." xml:space="preserve">
-    <value>Termine la chanson en cours même s&apos;il est démonté.</value>
-  </data>
-  <data name="&quot;{0}&quot;\nis not available (Reason: {1})" xml:space="preserve">
-    <value>&quot;{0}&quot;
-n&apos;est pas disponible (Raison : {1})</value>
+    <value>Termine la chanson en cours même s'il est démonté.</value>
   </data>
   <data name="Deleted" xml:space="preserve">
     <value>Supprimé</value>
@@ -304,5 +300,21 @@ n&apos;est pas disponible (Raison : {1})</value>
   </data>
   <data name="Game Volume during Playback" xml:space="preserve">
     <value>Volume du jeu pendant la lecture</value>
+  </data>
+  <data name="Music Unavailable" xml:space="preserve">
+    <value>Titre musical indisponible</value>
+  </data>
+  <data name="Playback Error" xml:space="preserve">
+    <value>Erreur de lecture</value>
+  </data>
+  <data name="&quot;{0}&quot;\nis not available (Reason: {1})" xml:space="preserve">
+    <value>"{0}"
+n'est pas disponible (Raison : {1})</value>
+  </data>
+  <data name="is unavailable." xml:space="preserve">
+    <value>n'est pas disponible.</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Raison</value>
   </data>
 </root>

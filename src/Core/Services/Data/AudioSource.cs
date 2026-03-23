@@ -99,13 +99,17 @@ namespace Nekres.Music_Mixer.Core.Services.Data {
             if (!HasError) {
                 return string.Empty;
             }
-            var reason = this.LastError switch {
-                YtDlpService.ErrorCode.Deleted     => Resources.Deleted,
-                YtDlpService.ErrorCode.Depublished => Resources.Depublished,
-                YtDlpService.ErrorCode.Geoblocked  => Resources.Geo_Blocked,
-                _                                  => Resources.Unknown
-            };
+            var reason = GetErrorReason();
             return string.Format(Resources.__0___nis_not_available__Reason___1__, this.Title, reason);
+        }
+
+        public string GetErrorReason() {
+            return this.LastError switch {
+                YtDlpService.ErrorCode.Deleted => Resources.Deleted,
+                YtDlpService.ErrorCode.Depublished => Resources.Depublished,
+                YtDlpService.ErrorCode.Geoblocked => Resources.Geo_Blocked,
+                _ => Resources.Unknown
+            };
         }
     }
 }
